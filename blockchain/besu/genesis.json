@@ -1,0 +1,43 @@
+{
+  "config": {
+    "chainId": 1337,
+    "berlinBlock": 0,
+    "londonBlock": 0,
+    "ibft2": {
+      "blockperiodseconds": 2,
+      "epochlength": 30000,
+      "requesttimeoutseconds": 4,
+      "blockreward": "0x0",
+      "miningbeneficiary": "0x0000000000000000000000000000000000000000"
+    }
+  },
+  "nonce": "0x0",
+  "timestamp": "0x0",
+  "gasLimit": "0x1fffffffffffff",
+  "difficulty": "0x1",
+  "mixHash": "0x63746963616c2062797a616e74696e65206661756c7420746f6c6572616e6365",
+  "coinbase": "0x0000000000000000000000000000000000000000",
+  "alloc": {
+    "0xfe3b557e8fb62b89f4916b721be55ceb828dbd73": {
+      "balance": "0xad78ebc5ac6200000",
+      "comment": "Node 1 - Validator account with 200 ETH"
+    },
+    "0x627306090abaB3A6e1400e9345bC60c78a8BEf57": {
+      "balance": "0xad78ebc5ac6200000",
+      "comment": "Node 2 - Validator account with 200 ETH"
+    },
+    "0xf17f52151EbEF6C7334FAD080c5704D77216b732": {
+      "balance": "0xad78ebc5ac6200000",
+      "comment": "Node 3 - Validator account with 200 ETH"
+    },
+    "0xC5fdf4076b8F3A5357c5E395ab970B5B54098Fef": {
+      "balance": "0xad78ebc5ac6200000",
+      "comment": "Node 4 - Validator account with 200 ETH"
+    },
+    "0x0000000000000000000000000000000000000000": {
+      "balance": "0x0",
+      "comment": "Zero address"
+    }
+  },
+  "extraData": "0xf8b7a00000000000000000000000000000000000000000000000000000000000000000f8549494e3b557e8fb62b89f4916b721be55ceb828dbd73947306090abaB3A6e1400e9345bC60c78a8BEf579417f52151EbEF6C7334FAD080c5704D77216b73294C5fdf4076b8F3A5357c5E395ab970B5B54098Fef808400000000c0"
+}

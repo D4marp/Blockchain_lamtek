@@ -1,0 +1,17 @@
+{
+  "name": "lamtek-blockchain",
+  "version": "1.0.0",
+  "description": "Smart Contracts for LAM Teknik SaaS Blockchain",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "deploy": "npx hardhat run scripts/deploy.js --network besu",
+    "deploy:local": "npx hardhat run scripts/deploy.js --network localhost",
+    "test": "npx hardhat test",
+    "console": "npx hardhat console --network besu"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^5.0.1",
+    "hardhat": "^2.19.0"
+  }
+}

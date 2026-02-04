@@ -1,0 +1,433 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # Container 1: API Gateway + Backend Service
+  # ============================================
+  api-gateway:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lamtek-api-gateway
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=mysql://lamtek:lamtek123@mysql:3306/lamtek_db
+      - BESU_RPC_URL=http://besu-node1:8545
+      - BESU_WS_URL=ws://besu-node1:8546
+      - IPFS_API_URL=http://ipfs-node:5001
+      - IPFS_GATEWAY_URL=http://ipfs-node:8888
+      - JWT_SECRET=${JWT_SECRET:-lamtek-secret-key-2025}
+      - JWT_EXPIRES_IN=24h
+      - REDIS_URL=redis://redis:6379
+      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_CLIENT_ID=lamtek-backend
+      - KAFKA_GROUP_ID=lamtek-consumer-group
+    depends_on:
+      - mysql
+      - redis
+      - besu-node1
+      - ipfs-node
+      - kafka
+    networks:
+      - lamtek-network
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================
+  # KAFKA + ZOOKEEPER - Event Streaming
+  # ============================================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: lamtek-zookeeper
+    restart: unless-stopped
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-log:/var/lib/zookeeper/log
+    networks:
+      - lamtek-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: lamtek-kafka
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    networks:
+      - lamtek-network
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: lamtek-kafka-ui
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: lamtek-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    depends_on:
+      - kafka
+    networks:
+      - lamtek-network
+
+  # ============================================
+  # HYPERLEDGER BESU - 4 NODE IBFT 2.0 NETWORK
+  # ============================================
+  
+  # Node 1 - Validator & Bootnode
+  besu-node1:
+    image: hyperledger/besu:24.1
+    container_name: lamtek-besu-node1
+    restart: unless-stopped
+    ports:
+      - "8545:8545"   # HTTP JSON-RPC
+      - "8546:8546"   # WebSocket
+      - "30303:30303" # P2P
+      - "9545:9545"   # Metrics
+    environment:
+      - BESU_SYNC_MODE=FULL
+      - BESU_LOGGING=INFO
+    volumes:
+      - ./blockchain/besu/node1/data:/opt/besu/data
+      - ./blockchain/besu/genesis.json:/opt/besu/genesis.json
+      - ./blockchain/besu/node1/key:/opt/besu/key
+      - ./blockchain/besu/config.toml:/opt/besu/config.toml
+      - ./blockchain/besu/static-nodes.json:/opt/besu/static-nodes.json
+    command: >
+      --genesis-file=/opt/besu/genesis.json
+      --node-private-key-file=/opt/besu/key
+      --config-file=/opt/besu/config.toml
+      --data-path=/opt/besu/data
+      --static-nodes-file=/opt/besu/static-nodes.json
+      --rpc-http-enabled=true
+      --rpc-http-api=ETH,NET,WEB3,ADMIN,DEBUG,TXPOOL,IBFT
+      --rpc-http-host=0.0.0.0
+      --rpc-http-port=8545
+      --rpc-http-cors-origins="*"
+      --rpc-ws-enabled=true
+      --rpc-ws-api=ETH,NET,WEB3,IBFT
+      --rpc-ws-host=0.0.0.0
+      --rpc-ws-port=8546
+      --host-allowlist="*"
+      --min-gas-price=0
+      --metrics-enabled=true
+      --metrics-host=0.0.0.0
+      --metrics-port=9545
+    networks:
+      lamtek-network:
+        ipv4_address: 172.20.0.10
+    healthcheck:
+      test: ["CMD", "curl", "-X", "POST", "--data", '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}', "http://localhost:8545"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Node 2 - Validator
+  besu-node2:
+    image: hyperledger/besu:24.1
+    container_name: lamtek-besu-node2
+    restart: unless-stopped
+    ports:
+      - "8555:8545"   # HTTP JSON-RPC
+      - "8556:8546"   # WebSocket
+      - "30304:30303" # P2P
+      - "9546:9545"   # Metrics
+    environment:
+      - BESU_SYNC_MODE=FULL
+      - BESU_LOGGING=INFO
+    volumes:
+      - ./blockchain/besu/node2/data:/opt/besu/data
+      - ./blockchain/besu/genesis.json:/opt/besu/genesis.json
+      - ./blockchain/besu/node2/key:/opt/besu/key
+      - ./blockchain/besu/config.toml:/opt/besu/config.toml
+      - ./blockchain/besu/static-nodes.json:/opt/besu/static-nodes.json
+    command: >
+      --genesis-file=/opt/besu/genesis.json
+      --node-private-key-file=/opt/besu/key
+      --config-file=/opt/besu/config.toml
+      --data-path=/opt/besu/data
+      --static-nodes-file=/opt/besu/static-nodes.json
+      --rpc-http-enabled=true
+      --rpc-http-api=ETH,NET,WEB3,ADMIN,IBFT
+      --rpc-http-host=0.0.0.0
+      --rpc-http-port=8545
+      --rpc-http-cors-origins="*"
+      --rpc-ws-enabled=true
+      --rpc-ws-api=ETH,NET,WEB3,IBFT
+      --rpc-ws-host=0.0.0.0
+      --rpc-ws-port=8546
+      --host-allowlist="*"
+      --min-gas-price=0
+      --bootnodes=enode://a0a1c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7@172.20.0.10:30303
+      --metrics-enabled=true
+      --metrics-host=0.0.0.0
+      --metrics-port=9545
+    depends_on:
+      - besu-node1
+    networks:
+      lamtek-network:
+        ipv4_address: 172.20.0.11
+    healthcheck:
+      test: ["CMD", "curl", "-X", "POST", "--data", '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}', "http://localhost:8545"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Node 3 - Validator
+  besu-node3:
+    image: hyperledger/besu:24.1
+    container_name: lamtek-besu-node3
+    restart: unless-stopped
+    ports:
+      - "8565:8545"   # HTTP JSON-RPC
+      - "8566:8546"   # WebSocket
+      - "30305:30303" # P2P
+      - "9547:9545"   # Metrics
+    environment:
+      - BESU_SYNC_MODE=FULL
+      - BESU_LOGGING=INFO
+    volumes:
+      - ./blockchain/besu/node3/data:/opt/besu/data
+      - ./blockchain/besu/genesis.json:/opt/besu/genesis.json
+      - ./blockchain/besu/node3/key:/opt/besu/key
+      - ./blockchain/besu/config.toml:/opt/besu/config.toml
+      - ./blockchain/besu/static-nodes.json:/opt/besu/static-nodes.json
+    command: >
+      --genesis-file=/opt/besu/genesis.json
+      --node-private-key-file=/opt/besu/key
+      --config-file=/opt/besu/config.toml
+      --data-path=/opt/besu/data
+      --static-nodes-file=/opt/besu/static-nodes.json
+      --rpc-http-enabled=true
+      --rpc-http-api=ETH,NET,WEB3,ADMIN,IBFT
+      --rpc-http-host=0.0.0.0
+      --rpc-http-port=8545
+      --rpc-http-cors-origins="*"
+      --rpc-ws-enabled=true
+      --rpc-ws-api=ETH,NET,WEB3,IBFT
+      --rpc-ws-host=0.0.0.0
+      --rpc-ws-port=8546
+      --host-allowlist="*"
+      --min-gas-price=0
+      --bootnodes=enode://a0a1c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7@172.20.0.10:30303
+      --metrics-enabled=true
+      --metrics-host=0.0.0.0
+      --metrics-port=9545
+    depends_on:
+      - besu-node1
+    networks:
+      lamtek-network:
+        ipv4_address: 172.20.0.12
+    healthcheck:
+      test: ["CMD", "curl", "-X", "POST", "--data", '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}', "http://localhost:8545"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Node 4 - Validator
+  besu-node4:
+    image: hyperledger/besu:24.1
+    container_name: lamtek-besu-node4
+    restart: unless-stopped
+    ports:
+      - "8575:8545"   # HTTP JSON-RPC
+      - "8576:8546"   # WebSocket
+      - "30306:30303" # P2P
+      - "9548:9545"   # Metrics
+    environment:
+      - BESU_SYNC_MODE=FULL
+      - BESU_LOGGING=INFO
+    volumes:
+      - ./blockchain/besu/node4/data:/opt/besu/data
+      - ./blockchain/besu/genesis.json:/opt/besu/genesis.json
+      - ./blockchain/besu/node4/key:/opt/besu/key
+      - ./blockchain/besu/config.toml:/opt/besu/config.toml
+      - ./blockchain/besu/static-nodes.json:/opt/besu/static-nodes.json
+    command: >
+      --genesis-file=/opt/besu/genesis.json
+      --node-private-key-file=/opt/besu/key
+      --config-file=/opt/besu/config.toml
+      --data-path=/opt/besu/data
+      --static-nodes-file=/opt/besu/static-nodes.json
+      --rpc-http-enabled=true
+      --rpc-http-api=ETH,NET,WEB3,ADMIN,IBFT
+      --rpc-http-host=0.0.0.0
+      --rpc-http-port=8545
+      --rpc-http-cors-origins="*"
+      --rpc-ws-enabled=true
+      --rpc-ws-api=ETH,NET,WEB3,IBFT
+      --rpc-ws-host=0.0.0.0
+      --rpc-ws-port=8546
+      --host-allowlist="*"
+      --min-gas-price=0
+      --bootnodes=enode://a0a1c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7@172.20.0.10:30303
+      --metrics-enabled=true
+      --metrics-host=0.0.0.0
+      --metrics-port=9545
+    depends_on:
+      - besu-node1
+    networks:
+      lamtek-network:
+        ipv4_address: 172.20.0.13
+    healthcheck:
+      test: ["CMD", "curl", "-X", "POST", "--data", '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}', "http://localhost:8545"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ============================================
+  # IPFS Node + Document Service
+  # ============================================
+  ipfs-node:
+    image: ipfs/kubo:latest
+    container_name: lamtek-ipfs-node
+    restart: unless-stopped
+    ports:
+      - "4001:4001"   # Swarm
+      - "5001:5001"   # API
+      - "8888:8080"   # Gateway
+    environment:
+      - IPFS_PROFILE=server
+    volumes:
+      - ./ipfs/data:/data/ipfs
+      - ./ipfs/staging:/export
+    networks:
+      - lamtek-network
+    command: >
+      daemon --migrate=true --enable-gc
+
+  # ============================================
+  # Supporting Services
+  # ============================================
+  mysql:
+    image: mysql:8.0
+    container_name: lamtek-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root123
+      - MYSQL_DATABASE=lamtek_db
+      - MYSQL_USER=lamtek
+      - MYSQL_PASSWORD=lamtek123
+    volumes:
+      - ./database/mysql-data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - lamtek-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: lamtek-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./database/redis-data:/data
+    networks:
+      - lamtek-network
+    command: redis-server --appendonly yes
+
+  # Blockchain Explorer
+  blockscout:
+    image: blockscout/blockscout:latest
+    container_name: lamtek-blockscout
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - ETHEREUM_JSONRPC_VARIANT=besu
+      - ETHEREUM_JSONRPC_HTTP_URL=http://besu-node1:8545
+      - ETHEREUM_JSONRPC_WS_URL=ws://besu-node1:8546
+      - DATABASE_URL=postgresql://postgres:postgres@blockscout-db:5432/blockscout
+      - NETWORK=LAMTeknik
+      - SUBNETWORK=Private
+      - CHAIN_ID=1337
+    depends_on:
+      - besu-node1
+      - blockscout-db
+    networks:
+      - lamtek-network
+
+  blockscout-db:
+    image: postgres:14
+    container_name: lamtek-blockscout-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=blockscout
+    volumes:
+      - ./database/blockscout-data:/var/lib/postgresql/data
+    networks:
+      - lamtek-network
+
+networks:
+  lamtek-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  mysql-data:
+  redis-data:
+  ipfs-data:
+  besu-node1-data:
+  besu-node2-data:
+  besu-node3-data:
+  besu-node4-data:
+  blockscout-data:
+  zookeeper-data:
+  zookeeper-log:
+  kafka-data:

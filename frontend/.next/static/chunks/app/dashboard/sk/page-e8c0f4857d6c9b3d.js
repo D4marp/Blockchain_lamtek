@@ -1,0 +1,51 @@
+(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[5975],{5864:function(e,a,t){Promise.resolve().then(t.bind(t,1006))},8281:function(e,a,t){"use strict";t.d(a,{Z:function(){return n}});/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let n=(0,t(8030).Z)("Award",[["path",{d:"m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526",key:"1yiouv"}],["circle",{cx:"12",cy:"8",r:"6",key:"1vp47v"}]])},4241:function(e,a,t){"use strict";t.d(a,{Z:function(){return n}});/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let n=(0,t(8030).Z)("Calendar",[["path",{d:"M8 2v4",key:"1cmpym"}],["path",{d:"M16 2v4",key:"4m81vk"}],["rect",{width:"18",height:"18",x:"3",y:"4",rx:"2",key:"1hopcy"}],["path",{d:"M3 10h18",key:"8toen8"}]])},2940:function(e,a,t){"use strict";t.d(a,{Z:function(){return n}});/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let n=(0,t(8030).Z)("CircleCheckBig",[["path",{d:"M22 11.08V12a10 10 0 1 1-5.93-9.14",key:"g774vq"}],["path",{d:"m9 11 3 3L22 4",key:"1pflzl"}]])},933:function(e,a,t){"use strict";t.d(a,{Z:function(){return n}});/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let n=(0,t(8030).Z)("Clock",[["circle",{cx:"12",cy:"12",r:"10",key:"1mglay"}],["polyline",{points:"12 6 12 12 16 14",key:"68esgv"}]])},7164:function(e,a,t){"use strict";t.d(a,{Z:function(){return n}});/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let n=(0,t(8030).Z)("Download",[["path",{d:"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4",key:"ih7n3h"}],["polyline",{points:"7 10 12 15 17 10",key:"2ggqvy"}],["line",{x1:"12",x2:"12",y1:"15",y2:"3",key:"1vk2je"}]])},5733:function(e,a,t){"use strict";t.d(a,{Z:function(){return n}});/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let n=(0,t(8030).Z)("Eye",[["path",{d:"M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z",key:"rwhkz3"}],["circle",{cx:"12",cy:"12",r:"3",key:"1v7zrd"}]])},2023:function(e,a,t){"use strict";t.d(a,{Z:function(){return n}});/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let n=(0,t(8030).Z)("FileText",[["path",{d:"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z",key:"1rqfz7"}],["path",{d:"M14 2v4a2 2 0 0 0 2 2h4",key:"tnqrlb"}],["path",{d:"M10 9H8",key:"b1mrlr"}],["path",{d:"M16 13H8",key:"t4e002"}],["path",{d:"M16 17H8",key:"z1uh3a"}]])},3274:function(e,a,t){"use strict";t.d(a,{Z:function(){return n}});/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let n=(0,t(8030).Z)("LoaderCircle",[["path",{d:"M21 12a9 9 0 1 1-6.219-8.56",key:"13zald"}]])},4817:function(e,a,t){"use strict";t.d(a,{Z:function(){return n}});/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let n=(0,t(8030).Z)("Search",[["circle",{cx:"11",cy:"11",r:"8",key:"4ej97u"}],["path",{d:"m21 21-4.3-4.3",key:"1qie3q"}]])},4697:function(e,a,t){"use strict";t.d(a,{Z:function(){return n}});/**
+ * @license lucide-react v0.379.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */let n=(0,t(8030).Z)("X",[["path",{d:"M18 6 6 18",key:"1bl5f8"}],["path",{d:"m6 6 12 12",key:"d8bk6v"}]])},1006:function(e,a,t){"use strict";t.r(a),t.d(a,{default:function(){return y}});var n=t(7437),s=t(2265),r=t(7138),l=t(2394),i=t(4241),c=t(5733),d=t(7164),o=t(2023),u=t(2940),h=t(8281),x=t(933),k=t(4817);let p=[{id:1,noSk:"SK-LAM-2024/001",prodi:"Teknik Kimia",institusi:"Universitas Borneo",jenjang:"S1",peringkat:"UNGGUL",tanggalSk:"2024-03-01",masaBerlaku:"2029-03-01",status:"AKTIF",txHash:"0x1234...abcd"},{id:2,noSk:"SK-LAM-2024/002",prodi:"Teknik Mesin",institusi:"Universitas Garuda",jenjang:"S1",peringkat:"BAIK_SEKALI",tanggalSk:"2024-02-15",masaBerlaku:"2029-02-15",status:"AKTIF",txHash:"0x5678...efgh"},{id:3,noSk:"SK-LAM-2023/099",prodi:"Teknik Sipil",institusi:"Universitas Cakra",jenjang:"S1",peringkat:"BAIK",tanggalSk:"2023-06-20",masaBerlaku:"2028-06-20",status:"AKTIF",txHash:"0x9abc...ijkl"},{id:4,noSk:"SK-LAM-2019/045",prodi:"Teknik Elektro",institusi:"Universitas Borneo",jenjang:"S2",peringkat:"BAIK",tanggalSk:"2019-05-10",masaBerlaku:"2024-05-10",status:"EXPIRED",txHash:"0xdef0...mnop"}],g={UNGGUL:{label:"Unggul",variant:"success"},BAIK_SEKALI:{label:"Baik Sekali",variant:"success"},BAIK:{label:"Baik",variant:"info"}},m={AKTIF:{label:"Aktif",variant:"success"},EXPIRED:{label:"Kedaluwarsa",variant:"danger"},REVOKED:{label:"Dicabut",variant:"warning"}};function y(){let[e,a]=(0,s.useState)(""),[t,y]=(0,s.useState)(""),f=p.filter(a=>{let n=a.prodi.toLowerCase().includes(e.toLowerCase())||a.institusi.toLowerCase().includes(e.toLowerCase())||a.noSk.toLowerCase().includes(e.toLowerCase()),s=!t||a.status===t;return n&&s}),v=[{label:"Total SK",value:p.length,color:"bg-blue-100 text-blue-600",icon:o.Z},{label:"Aktif",value:p.filter(e=>"AKTIF"===e.status).length,color:"bg-green-100 text-green-600",icon:u.Z},{label:"Unggul",value:p.filter(e=>"UNGGUL"===e.peringkat).length,color:"bg-amber-100 text-amber-600",icon:h.Z},{label:"Kedaluwarsa",value:p.filter(e=>"EXPIRED"===e.status).length,color:"bg-red-100 text-red-600",icon:x.Z}];return(0,n.jsxs)("div",{className:"space-y-6",children:[(0,n.jsx)("div",{className:"flex items-center justify-between",children:(0,n.jsxs)("div",{children:[(0,n.jsx)("h1",{className:"text-2xl font-bold text-secondary-900",children:"Surat Keputusan (SK)"}),(0,n.jsx)("p",{className:"text-secondary-500 mt-1",children:"Kelola SK akreditasi program studi"})]})}),(0,n.jsx)("div",{className:"grid grid-cols-2 md:grid-cols-4 gap-4",children:v.map(e=>{let a=e.icon;return(0,n.jsx)(l.Zb,{className:"p-4",children:(0,n.jsxs)("div",{className:"flex items-center gap-3",children:[(0,n.jsx)("div",{className:"p-3 rounded-lg ".concat(e.color),children:(0,n.jsx)(a,{className:"w-5 h-5"})}),(0,n.jsxs)("div",{children:[(0,n.jsx)("p",{className:"text-2xl font-bold text-secondary-900",children:e.value}),(0,n.jsx)("p",{className:"text-sm text-secondary-500",children:e.label})]})]})},e.label)})}),(0,n.jsx)(l.Zb,{className:"p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200",children:(0,n.jsxs)("div",{className:"flex items-center gap-4",children:[(0,n.jsx)("div",{className:"p-3 bg-indigo-100 rounded-lg",children:(0,n.jsx)("svg",{className:"w-6 h-6 text-indigo-600",viewBox:"0 0 24 24",fill:"none",stroke:"currentColor",strokeWidth:"2",children:(0,n.jsx)("path",{d:"M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"})})}),(0,n.jsxs)("div",{children:[(0,n.jsx)("h3",{className:"font-semibold text-indigo-900",children:"Terintegrasi dengan Blockchain"}),(0,n.jsx)("p",{className:"text-sm text-indigo-700",children:"Semua SK tersimpan di Hyperledger Besu untuk menjamin keaslian dan tidak dapat diubah"})]})]})}),(0,n.jsxs)(l.Zb,{children:[(0,n.jsx)("div",{className:"p-4 border-b border-secondary-200",children:(0,n.jsxs)("div",{className:"flex flex-col sm:flex-row gap-4",children:[(0,n.jsxs)("div",{className:"relative flex-1 max-w-md",children:[(0,n.jsx)(k.Z,{className:"absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-secondary-400"}),(0,n.jsx)("input",{type:"text",placeholder:"Cari SK...",value:e,onChange:e=>a(e.target.value),className:"w-full pl-10 pr-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"})]}),(0,n.jsxs)("select",{value:t,onChange:e=>y(e.target.value),className:"px-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500",children:[(0,n.jsx)("option",{value:"",children:"Semua Status"}),(0,n.jsx)("option",{value:"AKTIF",children:"Aktif"}),(0,n.jsx)("option",{value:"EXPIRED",children:"Kedaluwarsa"}),(0,n.jsx)("option",{value:"REVOKED",children:"Dicabut"})]})]})}),(0,n.jsx)(l.iA,{columns:[{key:"noSk",label:"No. SK"},{key:"prodi",label:"Program Studi"},{key:"institusi",label:"Institusi"},{key:"jenjang",label:"Jenjang"},{key:"peringkat",label:"Peringkat",render:e=>{let a=g[e];return a?(0,n.jsx)(l.Ct,{variant:a.variant,children:a.label}):e}},{key:"masaBerlaku",label:"Berlaku Sampai",render:e=>(0,n.jsxs)("div",{className:"flex items-center gap-2",children:[(0,n.jsx)(i.Z,{className:"w-4 h-4 text-secondary-400"}),e]})},{key:"status",label:"Status",render:e=>{let a=m[e];return a?(0,n.jsx)(l.Ct,{variant:a.variant,children:a.label}):e}},{key:"txHash",label:"Blockchain",render:e=>(0,n.jsx)("span",{className:"font-mono text-xs text-primary-600",children:e})},{key:"actions",label:"Aksi",render:(e,a)=>(0,n.jsxs)("div",{className:"flex items-center gap-2",children:[(0,n.jsx)(r.default,{href:"/dashboard/sk/".concat(a.id),children:(0,n.jsx)("button",{className:"p-1.5 text-secondary-500 hover:text-primary-600 hover:bg-primary-50 rounded-lg",children:(0,n.jsx)(c.Z,{className:"w-4 h-4"})})}),(0,n.jsx)("button",{className:"p-1.5 text-secondary-500 hover:text-green-600 hover:bg-green-50 rounded-lg",children:(0,n.jsx)(d.Z,{className:"w-4 h-4"})})]})}],data:f})]})]})}}},function(e){e.O(0,[9661,7138,2394,2971,7023,1744],function(){return e(e.s=5864)}),_N_E=e.O()}]);

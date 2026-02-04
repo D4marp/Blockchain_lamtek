@@ -1,0 +1,37 @@
+# Besu Node Configuration for LAM Teknik Blockchain
+# IBFT 2.0 Consensus with 4 Validator Nodes
+
+# Data storage
+data-path="/opt/besu/data"
+
+# Network
+network-id=1337
+discovery-enabled=true
+p2p-enabled=true
+p2p-host="0.0.0.0"
+p2p-port=30303
+
+# Sync mode
+sync-mode="FULL"
+
+# Logging
+logging="INFO"
+
+# Metrics (for Prometheus/Grafana monitoring)
+metrics-enabled=true
+metrics-host="0.0.0.0"
+metrics-port=9545
+
+# Gas configuration
+min-gas-price=0
+target-gas-limit=30000000
+
+# Transaction pool
+tx-pool-max-size=4096
+tx-pool-price-bump=10
+
+# Revert reason for debugging
+revert-reason-enabled=true
+
+# Pruning disabled for full node
+pruning-enabled=false

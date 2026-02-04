@@ -1,0 +1,55 @@
+# Ignore node_modules
+node_modules/
+*/node_modules/
+
+# Build outputs
+dist/
+build/
+*.js.map
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Docker volumes
+database/mysql-data/
+database/redis-data/
+database/blockscout-data/
+ipfs/data/
+ipfs/staging/
+blockchain/besu/node1/data/
+blockchain/besu/node2/data/
+
+# Blockchain artifacts
+blockchain/artifacts/
+blockchain/cache/
+blockchain/deployments/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Keys (sensitive)
+*.key
+*.pem
+!blockchain/besu/node*/key

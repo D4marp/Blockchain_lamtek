@@ -66,9 +66,12 @@ export default function PenunjukanValidatorPage() {
     const loadValidators = async () => {
       try {
         const response = await validatorApi.getActive();
-        setValidatorList(response.data || []);
+        // Handle both array and paginated response formats
+        const responseData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+        setValidatorList(responseData);
       } catch (err) {
         console.error('Failed to load validators', err);
+        setValidatorList([]);
       }
     };
     loadValidators();

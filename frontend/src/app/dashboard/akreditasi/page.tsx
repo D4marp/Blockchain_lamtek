@@ -111,9 +111,12 @@ export default function AkreditasiListPage() {
         const params: Record<string, any> = { page: currentPage, limit: itemsPerPage };
         if (statusFilter) params.status = statusFilter;
         const response = await akreditasiApi.getAll(params);
-        setData(response.data || []);
+        // Handle both array and paginated response formats
+        const responseData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+        setData(responseData);
       } catch (err: any) {
         setError(err.response?.data?.message || err.message || 'Gagal memuat data');
+        setData([]);
       } finally {
         setLoading(false);
       }
@@ -121,7 +124,7 @@ export default function AkreditasiListPage() {
     fetchData();
   }, [debouncedSearch, statusFilter, tipeFilter, currentPage]);
 
-  const filteredData = data.filter((item) => {
+  const filteredData = (Array.isArray(data) ? data : []).filter((item) => {
     const matchSearch =
       item.namaProdi?.toLowerCase().includes(search.toLowerCase()) ||
       item.universitas?.toLowerCase().includes(search.toLowerCase()) ||

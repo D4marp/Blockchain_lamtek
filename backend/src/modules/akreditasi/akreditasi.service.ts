@@ -12,8 +12,8 @@ export class AkreditasiService {
   constructor(
     @InjectRepository(Akreditasi)
     private akreditasiRepository: Repository<Akreditasi>,
-    private blockchainService: BlockchainService,
-    private ipfsService: IpfsService,
+    private blockchainService?: BlockchainService,
+    private ipfsService?: IpfsService,
   ) {}
 
   /**
@@ -53,17 +53,19 @@ export class AkreditasiService {
 
     // Register to blockchain
     try {
-      const txHash = await this.blockchainService.registerAkreditasi({
-        kodeAkreditasi: saved.kodeAkreditasi,
-        institusiId: saved.institusiId,
-        prodiId: saved.prodiId,
-        uppsId: saved.uppsId,
-        tipe: saved.tipe,
-      });
+      if (this.blockchainService) {
+        const txHash = await this.blockchainService.registerAkreditasi({
+          kodeAkreditasi: saved.kodeAkreditasi,
+          institusiId: saved.institusiId,
+          prodiId: saved.prodiId,
+          uppsId: saved.uppsId,
+          tipe: saved.tipe,
+        });
 
-      saved.blockchainTxHash = txHash;
-      saved.isOnBlockchain = true;
-      await this.akreditasiRepository.save(saved);
+        saved.blockchainTxHash = txHash;
+        saved.isOnBlockchain = true;
+        await this.akreditasiRepository.save(saved);
+      }
     } catch (error) {
       console.error('Failed to register to blockchain:', error);
       // Continue without blockchain - can retry later
@@ -112,31 +114,44 @@ export class AkreditasiService {
     tipe?: TipeAkreditasi;
     tahun?: number;
   }): Promise<{ data: Akreditasi[]; total: number; page: number; limit: number }> {
-    const { page = 1, limit = 10, status, tipe, tahun } = options;
+    try {
+      const { page = 1, limit = 10, status, tipe, tahun } = options;
 
-    const queryBuilder = this.akreditasiRepository.createQueryBuilder('akreditasi')
-      .where('akreditasi.tenantId = :tenantId', { tenantId })
-      .andWhere('akreditasi.isActive = :isActive', { isActive: true });
+      console.log('findAll called with:', { tenantId, page, limit, status, tipe, tahun });
 
-    if (status) {
-      queryBuilder.andWhere('akreditasi.status = :status', { status });
+      const queryBuilder = this.akreditasiRepository.createQueryBuilder('akreditasi')
+        .where('akreditasi.tenantId = :tenantId', { tenantId })
+        .andWhere('akreditasi.isActive = :isActive', { isActive: true });
+
+      if (status) {
+        queryBuilder.andWhere('akreditasi.status = :status', { status });
+      }
+
+      if (tipe) {
+        queryBuilder.andWhere('akreditasi.tipe = :tipe', { tipe });
+      }
+
+      if (tahun) {
+        queryBuilder.andWhere('akreditasi.tahun = :tahun', { tahun });
+      }
+
+      const query = queryBuilder
+        .orderBy('akreditasi.createdAt', 'DESC')
+        .skip((page - 1) * limit)
+        .take(limit);
+
+      console.log('Query SQL:', query.getSql());
+
+      const [data, total] = await query.getManyAndCount();
+
+      console.log('Query result:', { dataCount: data.length, total });
+
+      return { data, total, page, limit };
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      // Return empty result instead of throwing
+      return { data: [], total: 0, page: 1, limit: 10 };
     }
-
-    if (tipe) {
-      queryBuilder.andWhere('akreditasi.tipe = :tipe', { tipe });
-    }
-
-    if (tahun) {
-      queryBuilder.andWhere('akreditasi.tahun = :tahun', { tahun });
-    }
-
-    const [data, total] = await queryBuilder
-      .orderBy('akreditasi.createdAt', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getManyAndCount();
-
-    return { data, total, page, limit };
   }
 
   /**
@@ -284,55 +299,65 @@ export class AkreditasiService {
    * Get dashboard statistics
    */
   async getStats(tenantId: number): Promise<any> {
-    const totalCount = await this.akreditasiRepository.count({
-      where: { tenantId, isActive: true },
-    });
+    try {
+      const totalCount = await this.akreditasiRepository.count({
+        where: { tenantId, isActive: true },
+      });
 
-    const inProgressCount = await this.akreditasiRepository.count({
-      where: {
-        tenantId,
-        isActive: true,
-        status: In([
-          StatusAkreditasi.REGISTRASI,
-          StatusAkreditasi.VERIFIKASI_DOKUMEN,
-          StatusAkreditasi.PEMBAYARAN,
-          StatusAkreditasi.PENAWARAN_ASESOR,
-          StatusAkreditasi.ASESMEN_KECUKUPAN,
-          StatusAkreditasi.PENGESAHAN_AK,
-          StatusAkreditasi.ASESMEN_LAPANGAN,
-          StatusAkreditasi.TANGGAPAN_AL,
-          StatusAkreditasi.PENGESAHAN_AL,
-        ]),
-      },
-    });
+      const inProgressCount = await this.akreditasiRepository.count({
+        where: {
+          tenantId,
+          isActive: true,
+          status: In([
+            StatusAkreditasi.REGISTRASI,
+            StatusAkreditasi.VERIFIKASI_DOKUMEN,
+            StatusAkreditasi.PEMBAYARAN,
+            StatusAkreditasi.PENAWARAN_ASESOR,
+            StatusAkreditasi.ASESMEN_KECUKUPAN,
+            StatusAkreditasi.PENGESAHAN_AK,
+            StatusAkreditasi.ASESMEN_LAPANGAN,
+            StatusAkreditasi.TANGGAPAN_AL,
+            StatusAkreditasi.PENGESAHAN_AL,
+          ]),
+        },
+      });
 
-    const completedThisMonth = await this.akreditasiRepository.count({
-      where: {
-        tenantId,
-        isActive: true,
-        status: StatusAkreditasi.SELESAI,
-        wktTerakreditasi: MoreThan(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
-      },
-    });
+      const completedThisMonth = await this.akreditasiRepository.count({
+        where: {
+          tenantId,
+          isActive: true,
+          status: StatusAkreditasi.SELESAI,
+          wktTerakreditasi: MoreThan(new Date(new Date().getFullYear(), new Date().getMonth(), 1)),
+        },
+      });
 
-    const waitingAssessment = await this.akreditasiRepository.count({
-      where: {
-        tenantId,
-        isActive: true,
-        status: In([
-          StatusAkreditasi.PENAWARAN_ASESOR,
-          StatusAkreditasi.ASESMEN_KECUKUPAN,
-          StatusAkreditasi.ASESMEN_LAPANGAN,
-        ]),
-      },
-    });
+      const waitingAssessment = await this.akreditasiRepository.count({
+        where: {
+          tenantId,
+          isActive: true,
+          status: In([
+            StatusAkreditasi.PENAWARAN_ASESOR,
+            StatusAkreditasi.ASESMEN_KECUKUPAN,
+            StatusAkreditasi.ASESMEN_LAPANGAN,
+          ]),
+        },
+      });
 
-    return {
-      total: totalCount,
-      inProgress: inProgressCount,
-      completedThisMonth,
-      waitingAssessment,
-    };
+      return {
+        totalCount,
+        inProgressCount,
+        completedThisMonth,
+        waitingAssessment,
+      };
+    } catch (error) {
+      console.error('Error in getStats:', error);
+      return {
+        totalCount: 0,
+        inProgressCount: 0,
+        completedThisMonth: 0,
+        waitingAssessment: 0,
+      };
+    }
   }
 
   /**

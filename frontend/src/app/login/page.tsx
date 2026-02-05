@@ -35,12 +35,31 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
+      console.log('🔐 Login attempt:', { email: data.email });
       const response = await authApi.login(data.email, data.password);
-      setAuth(response.data.user, response.data.token);
+      console.log('✅ Login response:', response);
+      
+      if (!response.data) {
+        throw new Error('No response data from login');
+      }
+      
+      const { user, token } = response.data;
+      if (!user || !token) {
+        throw new Error('Missing user or token in response');
+      }
+      
+      setAuth(user, token);
+      console.log('✅ Auth state set, redirecting to dashboard...');
       toast.success('Login berhasil!');
-      router.push('/dashboard');
+      
+      // Force a small delay to ensure state is persisted
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 500);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Login gagal');
+      console.error('❌ Login error:', error);
+      const message = error?.response?.data?.message || error?.message || 'Login gagal. Periksa email dan password.';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

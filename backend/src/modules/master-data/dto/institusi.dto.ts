@@ -1,16 +1,28 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsString, IsEmail, IsEnum, IsOptional, IsBoolean, IsDateString, MaxLength } from 'class-validator';
+import { IsString, IsEmail, IsEnum, IsOptional, IsBoolean, IsDateString, MaxLength, MinLength } from 'class-validator';
 import { JenisPT, StatusInstitusi } from '../entities/institusi.entity';
 
 export class CreateInstitusiDto {
-  @ApiProperty({ description: 'Kode institusi unik', example: 'ITB' })
-  @IsString()
-  @MaxLength(50)
+  @ApiProperty({ 
+    description: 'Kode institusi unik (max 50 karakter)', 
+    example: 'ITB',
+    minLength: 1,
+    maxLength: 50
+  })
+  @IsString({ message: 'kodeInstitusi harus berupa string' })
+  @MinLength(1, { message: 'kodeInstitusi tidak boleh kosong' })
+  @MaxLength(50, { message: 'kodeInstitusi harus lebih pendek atau sama dengan 50 karakter' })
   kodeInstitusi: string;
 
-  @ApiProperty({ description: 'Nama lengkap institusi', example: 'Institut Teknologi Bandung' })
-  @IsString()
-  @MaxLength(255)
+  @ApiProperty({ 
+    description: 'Nama lengkap institusi (max 255 karakter)', 
+    example: 'Institut Teknologi Bandung',
+    minLength: 1,
+    maxLength: 255
+  })
+  @IsString({ message: 'namaInstitusi harus berupa string' })
+  @MinLength(1, { message: 'namaInstitusi tidak boleh kosong' })
+  @MaxLength(255, { message: 'namaInstitusi harus lebih pendek atau sama dengan 255 karakter' })
   namaInstitusi: string;
 
   @ApiPropertyOptional({ description: 'Nama singkat institusi', example: 'ITB' })

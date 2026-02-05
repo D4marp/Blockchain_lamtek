@@ -88,12 +88,15 @@ export default function AsesmenKecukupanPage() {
       setLoading(true);
       setError(null);
       try {
-        const params: Record<string, any> = {};
+        const params: Record<string, any> = { status: 'ASESMEN_KECUKUPAN' };
         if (statusFilter) params.status = statusFilter;
-        const response = await akreditasiApi.getAll({ status: 'ASESMEN_KECUKUPAN' });
-        setData(response.data || []);
+        const response = await akreditasiApi.getAll(params);
+        // Handle both array and paginated response formats
+        const responseData = Array.isArray(response.data) ? response.data : response.data?.data || [];
+        setData(responseData);
       } catch (err: any) {
         setError(err.response?.data?.message || err.message || 'Gagal memuat data');
+        setData([]);
       } finally {
         setLoading(false);
       }
@@ -101,7 +104,7 @@ export default function AsesmenKecukupanPage() {
     fetchData();
   }, [debouncedSearch, statusFilter]);
 
-  const filteredData = data.filter((item) => {
+  const filteredData = (Array.isArray(data) ? data : []).filter((item) => {
     const matchSearch =
       item.namaProdi?.toLowerCase().includes(search.toLowerCase()) ||
       item.universitas?.toLowerCase().includes(search.toLowerCase()) ||

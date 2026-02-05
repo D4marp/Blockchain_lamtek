@@ -62,8 +62,13 @@ export class AkreditasiController {
     @Query('tahun') tahun?: number,
     // @CurrentTenant() tenantId: number,
   ) {
-    const tenantId = 1; // TODO: Get from auth
-    return this.akreditasiService.findAll(tenantId, { page, limit, status, tipe, tahun });
+    try {
+      const tenantId = 1; // TODO: Get from auth
+      return await this.akreditasiService.findAll(tenantId, { page, limit, status, tipe, tahun });
+    } catch (error) {
+      console.error('Error in GET /akreditasi:', error);
+      return { data: [], total: 0, page: page || 1, limit: limit || 10 };
+    }
   }
 
   @Get('stats')
@@ -71,8 +76,18 @@ export class AkreditasiController {
   async getStats(
     // @CurrentTenant() tenantId: number,
   ) {
-    const tenantId = 1; // TODO: Get from auth
-    return this.akreditasiService.getStats(tenantId);
+    try {
+      const tenantId = 1; // TODO: Get from auth
+      return await this.akreditasiService.getStats(tenantId);
+    } catch (error) {
+      console.error('Error in GET /akreditasi/stats:', error);
+      return {
+        totalCount: 0,
+        inProgressCount: 0,
+        completedThisMonth: 0,
+        waitingAssessment: 0,
+      };
+    }
   }
 
   @Get(':id')
@@ -83,8 +98,13 @@ export class AkreditasiController {
     @Param('id', ParseIntPipe) id: number,
     // @CurrentTenant() tenantId: number,
   ) {
-    const tenantId = 1; // TODO: Get from auth
-    return this.akreditasiService.findOne(id, tenantId);
+    try {
+      const tenantId = 1; // TODO: Get from auth
+      return await this.akreditasiService.findOne(id, tenantId);
+    } catch (error) {
+      console.error(`Error in GET /akreditasi/${id}:`, error);
+      throw error;
+    }
   }
 
   @Get('kode/:kodeAkreditasi')

@@ -28,7 +28,12 @@ export class BlockchainService implements OnModuleInit {
   constructor(private configService: ConfigService) {}
 
   async onModuleInit() {
-    await this.connect();
+    try {
+      await this.connect();
+    } catch (error) {
+      this.logger.warn('Blockchain service initialization failed. Continuing without blockchain support.');
+      this.logger.debug(error);
+    }
   }
 
   /**
@@ -109,29 +114,35 @@ export class BlockchainService implements OnModuleInit {
     ipfsHashDokumen?: string;
   }): Promise<string> {
     if (!this.akreditasiContract) {
-      throw new Error('Contract not initialized');
+      this.logger.warn('Contract not initialized, skipping blockchain registration');
+      return 'SKIPPED';
     }
 
-    const tipeMapping: Record<string, number> = {
-      'REGULER': 0,
-      'PJJ': 1,
-      'PRODI_BARU_PTNBH': 2,
-      'PRODI_BARU_NON_PTNBH': 3,
-    };
+    try {
+      const tipeMapping: Record<string, number> = {
+        'REGULER': 0,
+        'PJJ': 1,
+        'PRODI_BARU_PTNBH': 2,
+        'PRODI_BARU_NON_PTNBH': 3,
+      };
 
-    const tx = await this.akreditasiContract.registerAkreditasi(
-      data.kodeAkreditasi,
-      data.institusiId,
-      data.prodiId,
-      data.uppsId,
-      tipeMapping[data.tipe] || 0,
-      data.ipfsHashDokumen || ''
-    );
+      const tx = await this.akreditasiContract.registerAkreditasi(
+        data.kodeAkreditasi,
+        data.institusiId,
+        data.prodiId,
+        data.uppsId,
+        tipeMapping[data.tipe] || 0,
+        data.ipfsHashDokumen || ''
+      );
 
-    const receipt: TransactionReceipt = await tx.wait();
-    this.logger.log(`Akreditasi registered: ${receipt.hash}`);
+      const receipt: TransactionReceipt = await tx.wait();
+      this.logger.log(`Akreditasi registered: ${receipt.hash}`);
 
-    return receipt.hash;
+      return receipt.hash;
+    } catch (error) {
+      this.logger.error('Failed to register akreditasi on blockchain:', error);
+      return 'FAILED';
+    }
   }
 
   /**

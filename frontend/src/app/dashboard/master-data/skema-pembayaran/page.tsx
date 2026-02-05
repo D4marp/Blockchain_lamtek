@@ -74,8 +74,10 @@ export default function SkemaPembayaranPage() {
     watch,
     setValue,
     formState: { errors },
+    getValues,
   } = useForm<SkemaFormData>({
     resolver: zodResolver(skemaSchema),
+    mode: 'onChange',
     defaultValues: {
       isActive: true,
       biayaRegistrasi: 0,
@@ -305,12 +307,18 @@ export default function SkemaPembayaranPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <FormSection title="Informasi Skema">
             <FormGrid cols={1}>
-              <Input
-                label="Nama Skema"
-                placeholder="Contoh: Skema Akreditasi S1"
-                error={errors.nama?.message}
-                {...register('nama')}
-              />
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-1.5">Nama Skema</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Skema Akreditasi S1"
+                  className={`w-full px-4 py-2.5 text-sm border rounded-lg bg-white placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200 ${
+                    errors.nama ? 'border-danger-500 focus:ring-danger-500 focus:border-danger-500' : 'border-secondary-300'
+                  }`}
+                  {...register('nama')}
+                />
+                {errors.nama && <p className="mt-1.5 text-sm text-danger-600">{errors.nama.message}</p>}
+              </div>
               <TextareaField
                 label="Deskripsi"
                 placeholder="Deskripsi skema pembayaran..."
@@ -318,37 +326,60 @@ export default function SkemaPembayaranPage() {
                 onChange={(val) => setValue('deskripsi', val)}
                 rows={2}
               />
-              <Select
-                label="Jenjang"
-                options={jenjangOptions}
-                {...register('jenjangId')}
-              />
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-1.5">Jenjang</label>
+                <select
+                  className="w-full px-4 py-2.5 text-sm border border-secondary-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200"
+                  {...register('jenjangId')}
+                >
+                  {jenjangOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </FormGrid>
           </FormSection>
 
           <FormSection title="Rincian Biaya">
             <FormGrid cols={1}>
-              <Input
-                label="Biaya Registrasi"
-                type="number"
-                placeholder="0"
-                error={errors.biayaRegistrasi?.message}
-                {...register('biayaRegistrasi', { valueAsNumber: true })}
-              />
-              <Input
-                label="Biaya Asesmen"
-                type="number"
-                placeholder="0"
-                error={errors.biayaAsesmen?.message}
-                {...register('biayaAsesmen', { valueAsNumber: true })}
-              />
-              <Input
-                label="Biaya SK"
-                type="number"
-                placeholder="0"
-                error={errors.biayaSK?.message}
-                {...register('biayaSK', { valueAsNumber: true })}
-              />
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-1.5">Biaya Registrasi</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  className={`w-full px-4 py-2.5 text-sm border rounded-lg bg-white placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200 ${
+                    errors.biayaRegistrasi ? 'border-danger-500 focus:ring-danger-500 focus:border-danger-500' : 'border-secondary-300'
+                  }`}
+                  {...register('biayaRegistrasi', { valueAsNumber: true })}
+                />
+                {errors.biayaRegistrasi && <p className="mt-1.5 text-sm text-danger-600">{errors.biayaRegistrasi.message}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-1.5">Biaya Asesmen</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  className={`w-full px-4 py-2.5 text-sm border rounded-lg bg-white placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200 ${
+                    errors.biayaAsesmen ? 'border-danger-500 focus:ring-danger-500 focus:border-danger-500' : 'border-secondary-300'
+                  }`}
+                  {...register('biayaAsesmen', { valueAsNumber: true })}
+                />
+                {errors.biayaAsesmen && <p className="mt-1.5 text-sm text-danger-600">{errors.biayaAsesmen.message}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-secondary-700 mb-1.5">Biaya SK</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  className={`w-full px-4 py-2.5 text-sm border rounded-lg bg-white placeholder-secondary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200 ${
+                    errors.biayaSK ? 'border-danger-500 focus:ring-danger-500 focus:border-danger-500' : 'border-secondary-300'
+                  }`}
+                  {...register('biayaSK', { valueAsNumber: true })}
+                />
+                {errors.biayaSK && <p className="mt-1.5 text-sm text-danger-600">{errors.biayaSK.message}</p>}
+              </div>
               <div className="p-4 bg-primary-50 rounded-lg">
                 <div className="flex justify-between items-center">
                   <span className="font-medium text-secondary-700">Total Biaya</span>

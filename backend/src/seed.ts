@@ -9,57 +9,77 @@ async function seedDatabase() {
   const dataSource = app.get(DataSource);
   
   try {
-    console.log('Seeding database...');
+    console.log('🌱 Seeding database...');
 
-    // Create users
-    const users = [
+    const userRepository = dataSource.getRepository(User);
+
+    // Password: password123 (hashed with bcrypt round 10)
+    const hashedPassword = await bcrypt.hash('password123', 10);
+
+    // Define test users
+    const testUsers = [
       {
+        id: 1,
         name: 'Admin LAM Teknik',
         email: 'admin@lamtek.ac.id',
-        password: await bcrypt.hash('password123', 10),
         role: 'ADMIN',
-        tenantId: null,
+        password: hashedPassword,
       },
       {
-        name: 'PT Institusi Teknik',
-        email: 'koordinator@ui.ac.id',
-        password: await bcrypt.hash('password123', 10),
-        role: 'INSTITUTION',
-        tenantId: 1,
+        id: 2,
+        name: 'Demo User',
+        email: 'demo@test.com',
+        role: 'PRODI',
+        password: hashedPassword,
       },
       {
-        name: 'Dr. Ahmad Validator',
-        email: 'validator@lamtek.ac.id',
-        password: await bcrypt.hash('password123', 10),
+        id: 3,
+        name: 'Validator User',
+        email: 'validator@test.com',
         role: 'VALIDATOR',
-        tenantId: null,
+        password: hashedPassword,
       },
       {
-        name: 'Asesor Lapangan',
-        email: 'asesor@lamtek.ac.id',
-        password: await bcrypt.hash('password123', 10),
-        role: 'USER',
-        tenantId: null,
+        id: 4,
+        name: 'Institution User',
+        email: 'institution@test.com',
+        role: 'KOMITE_EVALUASI',
+        password: hashedPassword,
       },
     ];
 
-    const userRepository = dataSource.getRepository(User);
-    
-    for (const userData of users) {
-      const exists = await userRepository.findOne({
+    for (const userData of testUsers) {
+      const existing = await userRepository.findOne({
         where: { email: userData.email },
       });
-      
-      if (!exists) {
+
+      if (!existing) {
         const user = userRepository.create(userData);
         await userRepository.save(user);
-        console.log(`Created user: ${userData.email}`);
+        console.log(`✅ Created user: ${userData.email} (${userData.role})`);
+      } else {
+        // Update existing user with correct data
+        existing.name = userData.name;
+        existing.role = userData.role as any;
+        existing.password = hashedPassword;
+        await userRepository.save(existing);
+        console.log(`✏️  Updated user: ${userData.email} (${userData.role})`);
       }
     }
 
-    console.log('Database seeding completed!');
+    console.log('\n📋 Test Users Created/Updated:');
+    console.log('================================');
+    testUsers.forEach((user) => {
+      console.log(`\n📧 ${user.email}`);
+      console.log(`   Name: ${user.name}`);
+      console.log(`   Role: ${user.role}`);
+      console.log(`   Password: password123`);
+    });
+
+    console.log('\n🌐 Login at: http://localhost:3000/login');
+    console.log('✨ Database seeding completed!');
   } catch (error) {
-    console.error('Error seeding database:', error);
+    console.error('❌ Error seeding database:', error);
   } finally {
     await app.close();
   }

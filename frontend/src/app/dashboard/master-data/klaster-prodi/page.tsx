@@ -27,21 +27,22 @@ import { klasterProdiApi, klasterIlmuApi } from '@/lib/api';
 import { useCrud, useDebounce } from '@/lib/hooks';
 
 const klasterProdiSchema = z.object({
-  kode: z.string().min(1, 'Kode wajib diisi'),
-  nama: z.string().min(1, 'Nama klaster wajib diisi'),
+  kodeKlaster: z.string().min(1, 'Kode wajib diisi'),
+  namaKlaster: z.string().min(1, 'Nama klaster wajib diisi'),
   deskripsi: z.string().optional(),
   klasterIlmuId: z.string().min(1, 'Klaster ilmu wajib dipilih'),
+  isActive: z.boolean().optional(),
 });
 
 type KlasterProdiFormData = z.infer<typeof klasterProdiSchema>;
 
 interface KlasterProdi {
   id: number;
-  kode: string;
-  nama: string;
+  kodeKlaster: string;
+  namaKlaster: string;
   deskripsi?: string;
   klasterIlmuId?: number;
-  klasterIlmu?: { id: number; nama: string };
+  klasterIlmu?: { id: number; namaKlaster: string };
   prodiCount?: number;
 }
 
@@ -87,10 +88,11 @@ export default function KlasterProdiPage() {
   const openCreateModal = () => {
     setEditingKlaster(null);
     reset({
-      kode: '',
-      nama: '',
+      kodeKlaster: '',
+      namaKlaster: '',
       deskripsi: '',
       klasterIlmuId: '',
+      isActive: true,
     });
     setIsModalOpen(true);
   };
@@ -98,10 +100,11 @@ export default function KlasterProdiPage() {
   const openEditModal = (klaster: KlasterProdi) => {
     setEditingKlaster(klaster);
     reset({
-      kode: klaster.kode,
-      nama: klaster.nama,
+      kodeKlaster: klaster.kodeKlaster,
+      namaKlaster: klaster.namaKlaster,
       deskripsi: klaster.deskripsi,
       klasterIlmuId: klaster.klasterIlmuId ? String(klaster.klasterIlmuId) : '',
+      isActive: true,
     });
     setIsModalOpen(true);
   };
@@ -109,10 +112,11 @@ export default function KlasterProdiPage() {
   const onSubmit = async (formData: KlasterProdiFormData) => {
     try {
       const payload = {
-        kode: formData.kode,
-        nama: formData.nama,
+        kodeKlaster: formData.kodeKlaster,
+        namaKlaster: formData.namaKlaster,
         deskripsi: formData.deskripsi,
         klasterIlmuId: formData.klasterIlmuId ? Number(formData.klasterIlmuId) : undefined,
+        isActive: formData.isActive ?? true,
       };
 
       if (editingKlaster) {
@@ -142,17 +146,17 @@ export default function KlasterProdiPage() {
 
   const columns = [
     { 
-      key: 'kode', 
+      key: 'kodeKlaster', 
       label: 'Kode',
       render: (value: string) => (
         <span className="font-mono text-sm px-2 py-1 bg-secondary-100 rounded">{value}</span>
       )
     },
-    { key: 'nama', label: 'Nama Klaster' },
+    { key: 'namaKlaster', label: 'Nama Klaster' },
     { 
       key: 'klasterIlmu', 
       label: 'Klaster Ilmu',
-      render: (_: unknown, row: KlasterProdi) => row.klasterIlmu?.nama || '-'
+      render: (_: unknown, row: KlasterProdi) => row.klasterIlmu?.namaKlaster || '-'
     },
     { 
       key: 'prodiCount', 
@@ -268,14 +272,14 @@ export default function KlasterProdiPage() {
               <Input
                 label="Kode"
                 placeholder="Contoh: TM"
-                error={errors.kode?.message}
-                {...register('kode')}
+                error={errors.kodeKlaster?.message}
+                {...register('kodeKlaster')}
               />
               <Input
                 label="Nama Klaster"
                 placeholder="Nama klaster program studi"
-                error={errors.nama?.message}
-                {...register('nama')}
+                error={errors.namaKlaster?.message}
+                {...register('namaKlaster')}
               />
               <Select
                 label="Klaster Ilmu"

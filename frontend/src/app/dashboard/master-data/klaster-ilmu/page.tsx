@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,8 +10,9 @@ import {
   Button,
   Input,
   Table,
+  Modal,
 } from '@/components/ui';
-import { FormSection, FormGrid, FormActions } from '@/components/ui/FormComponents';
+import { FormSection, FormGrid, TextareaField } from '@/components/ui/FormComponents';
 import {
   Plus,
   Search,
@@ -19,39 +20,47 @@ import {
   Trash2,
   X,
   Save,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
+import { klasterIlmuApi } from '@/lib/api';
+import { useCrud, useDebounce } from '@/lib/hooks';
 
 const klasterIlmuSchema = z.object({
+  kodeKlaster: z.string().min(1, 'Kode klaster wajib diisi'),
   namaKlaster: z.string().min(1, 'Nama klaster wajib diisi'),
-  kodeKlaster: z.string().optional(),
+  deskripsi: z.string().optional(),
+  isActive: z.boolean().optional(),
 });
 
 type KlasterIlmuFormData = z.infer<typeof klasterIlmuSchema>;
 
-const dummyKlasterIlmu = [
-  { id: 1, namaKlaster: 'Teknik Sipil', kodeKlaster: 'TS' },
-  { id: 2, namaKlaster: 'Teknik Elektro', kodeKlaster: 'TE' },
-  { id: 3, namaKlaster: 'Teknik Mesin', kodeKlaster: 'TM' },
-  { id: 4, namaKlaster: 'Teknik Industri', kodeKlaster: 'TI' },
-  { id: 5, namaKlaster: 'Teknik Kimia', kodeKlaster: 'TK' },
-  { id: 6, namaKlaster: 'Teknik Lingkungan', kodeKlaster: 'TL' },
-  { id: 7, namaKlaster: 'Teknik Pertambangan', kodeKlaster: 'TP' },
-  { id: 8, namaKlaster: 'Teknik Geologi', kodeKlaster: 'TG' },
-  { id: 9, namaKlaster: 'Teknik Geodesi', kodeKlaster: 'TGD' },
-  { id: 10, namaKlaster: 'Teknik Material', kodeKlaster: 'TMT' },
-  { id: 11, namaKlaster: 'Profesi Insinyur', kodeKlaster: 'PI' },
-];
+interface KlasterIlmu {
+  id: number;
+  kodeKlaster: string;
+  namaKlaster: string;
+  deskripsi?: string;
+  isActive?: boolean;
+}
 
 export default function KlasterIlmuPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [data, setData] = useState(dummyKlasterIlmu);
+  const [editingKlaster, setEditingKlaster] = useState<KlasterIlmu | null>(null);
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  const { data, loading, error, saving, fetchAll, create, update, remove } = useCrud<KlasterIlmu>(klasterIlmuApi);
+
+  useEffect(() => {
+    fetchAll({ search: debouncedSearch });
+  }, [debouncedSearch]);
 
   const {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<KlasterIlmuFormData>({
     resolver: zodResolver(klasterIlmuSchema),
@@ -59,68 +68,75 @@ export default function KlasterIlmuPage() {
 
   const onSubmit = async (formData: KlasterIlmuFormData) => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const payload = {
+        kodeKlaster: formData.kodeKlaster,
+        namaKlaster: formData.namaKlaster,
+        deskripsi: formData.deskripsi,
+        isActive: formData.isActive ?? true,
+      };
 
-      if (editingId) {
-        setData((prev) =>
-          prev.map((item) =>
-            item.id === editingId
-              ? { ...item, ...formData }
-              : item
-          )
-        );
+      if (editingKlaster) {
+        await update(editingKlaster.id, payload);
         toast.success('Klaster ilmu berhasil diperbarui');
       } else {
-        const newItem = {
-          id: Date.now(),
-          namaKlaster: formData.namaKlaster,
-          kodeKlaster: formData.kodeKlaster || '',
-        };
-        setData((prev) => [...prev, newItem]);
+        await create(payload);
         toast.success('Klaster ilmu berhasil ditambahkan');
       }
 
       setIsFormOpen(false);
-      setEditingId(null);
+      setEditingKlaster(null);
       reset();
     } catch (error) {
       toast.error('Gagal menyimpan data');
     }
   };
 
-  const handleEdit = (item: typeof dummyKlasterIlmu[0]) => {
-    setEditingId(item.id);
+  const handleEdit = (klaster: KlasterIlmu) => {
+    setEditingKlaster(klaster);
     reset({
-      namaKlaster: item.namaKlaster,
-      kodeKlaster: item.kodeKlaster,
+      kodeKlaster: klaster.kodeKlaster,
+      namaKlaster: klaster.namaKlaster,
+      deskripsi: klaster.deskripsi,
+      isActive: klaster.isActive ?? true,
     });
     setIsFormOpen(true);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (confirm('Yakin ingin menghapus klaster ilmu ini?')) {
-      setData((prev) => prev.filter((item) => item.id !== id));
-      toast.success('Klaster ilmu berhasil dihapus');
+      try {
+        await remove(id);
+        toast.success('Klaster ilmu berhasil dihapus');
+      } catch (err) {
+        toast.error('Gagal menghapus data');
+      }
     }
   };
 
   const handleCancel = () => {
     setIsFormOpen(false);
-    setEditingId(null);
+    setEditingKlaster(null);
     reset();
   };
 
-  const filteredData = data.filter((item) =>
-    item.namaKlaster.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const columns = [
-    { key: 'kodeKlaster', label: 'Kode' },
+    { 
+      key: 'kodeKlaster', 
+      label: 'Kode',
+      render: (value: string) => (
+        <span className="font-mono text-sm px-2 py-1 bg-secondary-100 rounded">{value}</span>
+      )
+    },
     { key: 'namaKlaster', label: 'Nama Klaster Ilmu' },
+    { 
+      key: 'deskripsi', 
+      label: 'Deskripsi',
+      render: (value?: string) => value || '-'
+    },
     {
       key: 'actions',
       label: 'Aksi',
-      render: (_: unknown, row: typeof dummyKlasterIlmu[0]) => (
+      render: (_: unknown, row: KlasterIlmu) => (
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleEdit(row)}
@@ -139,6 +155,16 @@ export default function KlasterIlmuPage() {
     },
   ];
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-red-500">
+        <AlertCircle className="w-12 h-12 mb-4" />
+        <p>Gagal memuat data: {error}</p>
+        <Button onClick={() => fetchAll()} className="mt-4">Coba Lagi</Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -146,55 +172,17 @@ export default function KlasterIlmuPage() {
           <h1 className="text-2xl font-bold text-secondary-900">Klaster Ilmu</h1>
           <p className="text-secondary-500 mt-1">Kelola data klaster ilmu teknik</p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)}>
+        <Button onClick={() => {
+          setEditingKlaster(null);
+          reset();
+          setIsFormOpen(true);
+        }}>
           <Plus className="w-4 h-4 mr-2" />
           Tambah Klaster
         </Button>
       </div>
 
-      {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto m-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-secondary-200">
-              <h2 className="text-lg font-semibold text-secondary-900">
-                {editingId ? 'Edit Klaster Ilmu' : 'Tambah Klaster Ilmu Baru'}
-              </h2>
-              <button onClick={handleCancel} className="p-1 hover:bg-secondary-100 rounded-lg">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
-              <FormSection title="Informasi Klaster">
-                <FormGrid cols={1}>
-                  <Input
-                    label="Kode Klaster"
-                    placeholder="Contoh: TS"
-                    {...register('kodeKlaster')}
-                  />
-                  <Input
-                    label="Nama Klaster"
-                    placeholder="Contoh: Teknik Sipil"
-                    error={errors.namaKlaster?.message}
-                    {...register('namaKlaster')}
-                  />
-                </FormGrid>
-              </FormSection>
-
-              <FormActions>
-                <Button type="button" variant="ghost" onClick={handleCancel}>
-                  Batal
-                </Button>
-                <Button type="submit" isLoading={isSubmitting}>
-                  <Save className="w-4 h-4 mr-2" />
-                  {editingId ? 'Perbarui' : 'Simpan'}
-                </Button>
-              </FormActions>
-            </form>
-          </div>
-        </div>
-      )}
-
+      {/* Table */}
       <Card>
         <div className="p-4 border-b border-secondary-200">
           <div className="relative max-w-md">
@@ -208,8 +196,57 @@ export default function KlasterIlmuPage() {
             />
           </div>
         </div>
-        <Table columns={columns} data={filteredData} />
+        {loading ? (
+          <div className="flex items-center justify-center h-32">
+            <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+          </div>
+        ) : (
+          <Table columns={columns} data={data} />
+        )}
       </Card>
+
+      {/* Modal */}
+      <Modal
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        title={editingKlaster ? 'Edit Klaster Ilmu' : 'Tambah Klaster Ilmu Baru'}
+      >
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <FormSection title="Informasi Klaster">
+            <FormGrid cols={1}>
+              <Input
+                label="Kode Klaster"
+                placeholder="Contoh: TS"
+                error={errors.kodeKlaster?.message}
+                {...register('kodeKlaster')}
+              />
+              <Input
+                label="Nama Klaster"
+                placeholder="Contoh: Teknik Sipil"
+                error={errors.namaKlaster?.message}
+                {...register('namaKlaster')}
+              />
+              <TextareaField
+                label="Deskripsi"
+                placeholder="Deskripsi klaster ilmu..."
+                error={errors.deskripsi?.message}
+                value={watch('deskripsi') || ''}
+                onChange={(val) => setValue('deskripsi', val)}
+                rows={2}
+              />
+            </FormGrid>
+          </FormSection>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button type="button" variant="ghost" onClick={handleCancel}>
+              Batal
+            </Button>
+            <Button type="submit" isLoading={saving}>
+              {editingKlaster ? 'Simpan Perubahan' : 'Tambah Klaster'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

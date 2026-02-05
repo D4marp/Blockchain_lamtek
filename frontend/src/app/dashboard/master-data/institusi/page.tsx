@@ -31,36 +31,48 @@ import {
 import { institusiApi, provinsiApi } from '@/lib/api';
 import { useCrud, useDebounce } from '@/lib/hooks';
 
-// Schema
+// Schema - Updated to match backend API field names
 const institusiSchema = z.object({
-  nama: z.string().min(1, 'Nama institusi wajib diisi'),
-  statusInstitusi: z.string().optional(),
+  kodeInstitusi: z.string().min(1, 'Kode institusi wajib diisi').max(50, 'Max 50 karakter'),
+  namaInstitusi: z.string().min(1, 'Nama institusi wajib diisi').max(255, 'Max 255 karakter'),
+  jenisPt: z.enum(['PTN', 'PTS', 'PTN_BH', 'POLITEKNIK']).optional().or(z.literal('')),
+  status: z.enum(['AKTIF', 'TIDAK_AKTIF', 'MERGER']).optional().or(z.literal('')),
   alamat: z.string().optional(),
   kota: z.string().optional(),
-  provinsiId: z.coerce.number().optional(),
-  kodeInstitusiPddikti: z.string().optional(),
-  isAktif: z.boolean().default(true),
+  email: z.string().email().optional().or(z.literal('')),
+  website: z.string().optional(),
 });
 
 type InstitusiFormData = z.infer<typeof institusiSchema>;
 
 interface Institusi {
   id: number;
-  nama: string;
-  statusInstitusi?: string;
+  kodeInstitusi: string;
+  namaInstitusi: string;
+  jenisPt?: string;
+  status?: string;
   alamat?: string;
   kota?: string;
-  provinsiId?: number;
-  kodeInstitusiPddikti?: string;
-  isAktif: boolean;
+  email?: string;
+  website?: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+const jenisPtOptions = [
+  { value: '', label: 'Pilih jenis PT' },
+  { value: 'PTN', label: 'PTN (Perguruan Tinggi Negeri)' },
+  { value: 'PTN_BH', label: 'PTN-BH (PTN Badan Hukum)' },
+  { value: 'PTS', label: 'PTS (Perguruan Tinggi Swasta)' },
+  { value: 'POLITEKNIK', label: 'Politeknik' },
+];
 
 const statusOptions = [
   { value: '', label: 'Pilih status' },
-  { value: 'PTN', label: 'PTN (Perguruan Tinggi Negeri)' },
-  { value: 'PTN-BH', label: 'PTN-BH (PTN Badan Hukum)' },
-  { value: 'PTS', label: 'PTS (Perguruan Tinggi Swasta)' },
-  { value: 'POLITEKNIK', label: 'Politeknik' },
+  { value: 'AKTIF', label: 'Aktif' },
+  { value: 'TIDAK_AKTIF', label: 'Tidak Aktif' },
+  { value: 'MERGER', label: 'Merger' },
 ];
 
 export default function InstitusiPage() {
@@ -98,17 +110,10 @@ export default function InstitusiPage() {
     register,
     handleSubmit,
     reset,
-    watch,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<InstitusiFormData>({
     resolver: zodResolver(institusiSchema),
-    defaultValues: {
-      isAktif: true,
-    },
   });
-
-  const isAktif = watch('isAktif');
 
   const onSubmit = async (formData: InstitusiFormData) => {
     try {
@@ -130,13 +135,14 @@ export default function InstitusiPage() {
   const handleEdit = (item: Institusi) => {
     setEditingId(item.id);
     reset({
-      nama: item.nama,
-      statusInstitusi: item.statusInstitusi || '',
+      kodeInstitusi: item.kodeInstitusi,
+      namaInstitusi: item.namaInstitusi,
+      jenisPt: (item.jenisPt as any) || '',
+      status: (item.status as any) || '',
       alamat: item.alamat || '',
       kota: item.kota || '',
-      provinsiId: item.provinsiId,
-      kodeInstitusiPddikti: item.kodeInstitusiPddikti || '',
-      isAktif: item.isAktif,
+      email: item.email || '',
+      website: item.website || '',
     });
     setIsFormOpen(true);
   };
@@ -159,16 +165,19 @@ export default function InstitusiPage() {
   };
 
   const filteredData = data.filter((item) =>
-    item.nama.toLowerCase().includes(debouncedSearch.toLowerCase())
+    item.namaInstitusi?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+    item.kodeInstitusi?.toLowerCase().includes(debouncedSearch.toLowerCase())
   );
 
   const columns = [
-    { key: 'nama', label: 'Nama Institusi' },
-    { key: 'statusInstitusi', label: 'Status' },
+    { key: 'kodeInstitusi', label: 'Kode' },
+    { key: 'namaInstitusi', label: 'Nama Institusi' },
+    { key: 'jenisPt', label: 'Jenis PT' },
+    { key: 'status', label: 'Status' },
     { key: 'kota', label: 'Kota' },
     {
-      key: 'isAktif',
-      label: 'Status Aktif',
+      key: 'isActive',
+      label: 'Aktif',
       render: (value: boolean) => (
         <Badge variant={value ? 'success' : 'danger'}>
           {value ? 'Aktif' : 'Tidak Aktif'}
@@ -258,29 +267,36 @@ export default function InstitusiPage() {
             <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
               <FormSection title="Informasi Dasar" subtitle="Data utama institusi">
                 <FormGrid cols={2}>
+                  <Input
+                    label="Kode Institusi"
+                    placeholder="Contoh: ITB"
+                    error={errors.kodeInstitusi?.message}
+                    {...register('kodeInstitusi')}
+                  />
                   <div className="col-span-2">
                     <Input
                       label="Nama Institusi"
-                      placeholder="Contoh: Universitas Indonesia"
-                      error={errors.nama?.message}
-                      {...register('nama')}
+                      placeholder="Contoh: Institut Teknologi Bandung"
+                      error={errors.namaInstitusi?.message}
+                      {...register('namaInstitusi')}
                     />
                   </div>
                   <Select
-                    label="Status Institusi"
-                    options={statusOptions}
-                    error={errors.statusInstitusi?.message}
-                    {...register('statusInstitusi')}
+                    label="Jenis PT"
+                    options={jenisPtOptions}
+                    error={errors.jenisPt?.message}
+                    {...register('jenisPt')}
                   />
-                  <Input
-                    label="Kode PDDIKTI"
-                    placeholder="Masukkan kode institusi"
-                    {...register('kodeInstitusiPddikti')}
+                  <Select
+                    label="Status"
+                    options={statusOptions}
+                    error={errors.status?.message}
+                    {...register('status')}
                   />
                 </FormGrid>
               </FormSection>
 
-              <FormSection title="Lokasi" subtitle="Alamat dan wilayah institusi">
+              <FormSection title="Lokasi & Kontak" subtitle="Alamat, wilayah, dan informasi kontak institusi">
                 <FormGrid cols={2}>
                   <div className="col-span-2">
                     <Input
@@ -294,21 +310,20 @@ export default function InstitusiPage() {
                     placeholder="Nama kota"
                     {...register('kota')}
                   />
-                  <Select
-                    label="Provinsi"
-                    options={provinsiOptions}
-                    {...register('provinsiId')}
+                  <Input
+                    label="Email"
+                    type="email"
+                    placeholder="email@institusi.ac.id"
+                    error={errors.email?.message}
+                    {...register('email')}
+                  />
+                  <Input
+                    label="Website"
+                    placeholder="https://institusi.ac.id"
+                    error={errors.website?.message}
+                    {...register('website')}
                   />
                 </FormGrid>
-              </FormSection>
-
-              <FormSection title="Status" subtitle="Status aktif institusi">
-                <SwitchField
-                  label="Aktif"
-                  description="Institusi yang tidak aktif tidak akan muncul dalam pilihan"
-                  checked={isAktif}
-                  onChange={(val) => setValue('isAktif', val)}
-                />
               </FormSection>
 
               <FormActions>

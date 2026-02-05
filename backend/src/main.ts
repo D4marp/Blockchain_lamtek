@@ -1,10 +1,29 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { DataSource } from 'typeorm';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+  
+  // Check database connection
+  try {
+    const dataSource = app.get(DataSource);
+    if (!dataSource.isInitialized) {
+      await dataSource.initialize();
+    }
+    const queryRunner = dataSource.createQueryRunner();
+    await queryRunner.connect();
+    const version = await queryRunner.query('SELECT VERSION() as version');
+    logger.log(`✅ Database connected successfully: ${version[0].version}`);
+    await queryRunner.release();
+  } catch (error) {
+    logger.error(`❌ Database connection failed: ${error.message}`);
+    logger.error('Make sure your database is running and credentials in .env are correct');
+    process.exit(1);
+  }
   
   // Global prefix
   app.setGlobalPrefix('api/v1');
@@ -46,8 +65,9 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
   
-  console.log(`🚀 LAM Teknik SaaS API running on: http://localhost:${port}`);
-  console.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
+  logger.log(`🚀 LAM Teknik SaaS API running on: http://localhost:${port}`);
+  logger.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
+  logger.log(`🔐 Auth endpoints: POST /api/v1/auth/login, POST /api/v1/auth/register`);
 }
 
 bootstrap();

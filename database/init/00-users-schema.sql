@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS `users` (
 -- Password: password123 (hashed with bcrypt, 10 rounds)
 -- ----------------------------
 INSERT INTO `users` (`name`, `email`, `password`, `role`, `tenantId`, `isActive`) VALUES
-('Admin LAM Teknik', 'admin@lamtek.ac.id', '$2b$10$K7cZQH4H4F9fHLdGq5rBN.Y8VqHY3z8pZ9QgYqGZ8YgY8YgY8YgY8O', 'ADMIN', NULL, 1)
+('Admin LAM Teknik', 'admin@lamtek.ac.id', '$2a$10$dGQpyMuHJt/ayZaMDF98QuLjLn8O6BKbmT69ZsyDVMs3QhHFNTzU6', 'ADMIN', NULL, 1),
+('Test User', 'demo@test.com', '$2a$10$GUVUT4FgN7uWuGLdx1Fbp.k5HN3Epyta2q90vhc1SM.vgYWiVxL8.', 'USER', NULL, 1)
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
 SET FOREIGN_KEY_CHECKS = 1;

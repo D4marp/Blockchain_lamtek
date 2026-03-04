@@ -242,7 +242,7 @@ export function useDebounce<T>(value: T, delay: number): T {
 
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
-import type {
+import {
   Akreditasi,
   StatusAkreditasi,
   AsesmenKecukupan,
@@ -252,33 +252,33 @@ import type {
 // Hook for managing workflow steps
 export function useWorkflowSteps() {
   const steps: StatusAkreditasi[] = [
-    'REGISTRASI',
-    'VERIFIKASI_DOKUMEN',
-    'PEMBAYARAN',
-    'PENAWARAN_ASESOR',
-    'ASESMEN_KECUKUPAN',
-    'PENGESAHAN_AK',
-    'ASESMEN_LAPANGAN',
-    'TANGGAPAN_AL',
-    'PENGESAHAN_AL',
-    'PENETAPAN_PERINGKAT',
-    'SINKRONISASI_BANPT',
-    'SELESAI',
+    StatusAkreditasi.REGISTRASI,
+    StatusAkreditasi.VERIFIKASI_DOKUMEN,
+    StatusAkreditasi.PEMBAYARAN,
+    StatusAkreditasi.PENAWARAN_ASESOR,
+    StatusAkreditasi.ASESMEN_KECUKUPAN,
+    StatusAkreditasi.PENGESAHAN_AK,
+    StatusAkreditasi.ASESMEN_LAPANGAN,
+    StatusAkreditasi.TANGGAPAN_AL,
+    StatusAkreditasi.PENGESAHAN_AL,
+    StatusAkreditasi.PENETAPAN_PERINGKAT,
+    StatusAkreditasi.SINKRONISASI_BANPT,
+    StatusAkreditasi.SELESAI,
   ];
 
   const stepTitles: Record<StatusAkreditasi, string> = {
-    REGISTRASI: 'Registrasi',
-    VERIFIKASI_DOKUMEN: 'Verifikasi Dokumen',
-    PEMBAYARAN: 'Pembayaran',
-    PENAWARAN_ASESOR: 'Penawaran Asesor',
-    ASESMEN_KECUKUPAN: 'Asesmen Kecukupan',
-    PENGESAHAN_AK: 'Pengesahan AK',
-    ASESMEN_LAPANGAN: 'Asesmen Lapangan',
-    TANGGAPAN_AL: 'Tanggapan AL',
-    PENGESAHAN_AL: 'Pengesahan AL',
-    PENETAPAN_PERINGKAT: 'Penetapan Peringkat',
-    SINKRONISASI_BANPT: 'Sinkronisasi BANPT',
-    SELESAI: 'Selesai',
+    [StatusAkreditasi.REGISTRASI]: 'Registrasi',
+    [StatusAkreditasi.VERIFIKASI_DOKUMEN]: 'Verifikasi Dokumen',
+    [StatusAkreditasi.PEMBAYARAN]: 'Pembayaran',
+    [StatusAkreditasi.PENAWARAN_ASESOR]: 'Penawaran Asesor',
+    [StatusAkreditasi.ASESMEN_KECUKUPAN]: 'Asesmen Kecukupan',
+    [StatusAkreditasi.PENGESAHAN_AK]: 'Pengesahan AK',
+    [StatusAkreditasi.ASESMEN_LAPANGAN]: 'Asesmen Lapangan',
+    [StatusAkreditasi.TANGGAPAN_AL]: 'Tanggapan AL',
+    [StatusAkreditasi.PENGESAHAN_AL]: 'Pengesahan AL',
+    [StatusAkreditasi.PENETAPAN_PERINGKAT]: 'Penetapan Peringkat',
+    [StatusAkreditasi.SINKRONISASI_BANPT]: 'Sinkronisasi BANPT',
+    [StatusAkreditasi.SELESAI]: 'Selesai',
   };
 
   const getStepIndex = (status: StatusAkreditasi) => steps.indexOf(status);

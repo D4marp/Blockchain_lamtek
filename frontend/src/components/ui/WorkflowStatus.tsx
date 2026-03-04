@@ -20,7 +20,7 @@ export function WorkflowStatus({
   size = 'md',
 }: WorkflowStatusProps) {
   const { steps, stepTitles, getStepIndex } = useWorkflowSteps();
-  const currentIndex = getStepIndex(currentStatus);
+  const currentIndex = getStepIndex(currentStatus as StatusAkreditasi);
   const progress = Math.round(((currentIndex + 1) / steps.length) * 100);
 
   const sizeClasses = {
@@ -184,7 +184,7 @@ export function WorkflowStatus({
       <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
         <p className="text-sm text-gray-600">
           <span className="font-semibold text-gray-900">Current Status:</span>{' '}
-          <span className="text-blue-600 font-medium">{stepTitles[currentStatus]}</span>
+          <span className="text-blue-600 font-medium">{stepTitles[currentStatus as StatusAkreditasi] || currentStatus}</span>
         </p>
         <p className="text-xs text-gray-500 mt-1">
           Step {currentIndex + 1} of {steps.length}

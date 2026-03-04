@@ -183,8 +183,8 @@ export default function FormRegistrasiProdiBaruPage() {
                     {loading ? 'Memuat data...' : '-- Pilih Institusi --'}
                   </option>
                   {institusiOptions.map((institusi) => (
-                    <option key={institusi.value} value={institusi.value}>
-                      {institusi.label}
+                    <option key={institusi.id} value={institusi.id}>
+                      {institusi.nama}
                     </option>
                   ))}
                 </select>

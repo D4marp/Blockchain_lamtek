@@ -7,7 +7,7 @@ import type { StatusAkreditasi } from '@/types';
 import { useWorkflowSteps } from '@/lib/hooks';
 
 interface WorkflowStatusProps {
-  currentStatus: StatusAkreditasi;
+  currentStatus: StatusAkreditasi | string;
   className?: string;
   hideLabels?: boolean;
   size?: 'sm' | 'md' | 'lg';

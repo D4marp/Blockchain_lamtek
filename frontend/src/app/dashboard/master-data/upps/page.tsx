@@ -28,11 +28,15 @@ import { uppsApi, institusiApi } from '@/lib/api';
 import { useCrud, useDebounce } from '@/lib/hooks';
 
 const uppsSchema = z.object({
-  namaUPPS: z.string().min(1, 'Nama UPPS wajib diisi'),
+  kodeUpps: z.string().min(1, 'Kode UPPS wajib diisi').max(50, 'Max 50 karakter'),
+  namaUpps: z.string().min(1, 'Nama UPPS wajib diisi').max(255, 'Max 255 karakter'),
   institusiId: z.string().min(1, 'Institusi wajib dipilih'),
   namaPimpinan: z.string().optional(),
+  jabatanPimpinan: z.string().optional(),
+  alamat: z.string().optional(),
+  telepon: z.string().optional(),
   email: z.string().email('Email tidak valid').optional().or(z.literal('')),
-  telpNo: z.string().optional(),
+  website: z.string().optional(),
   isActive: z.boolean().default(true),
 });
 
@@ -40,13 +44,18 @@ type UPPSFormData = z.infer<typeof uppsSchema>;
 
 interface UPPS {
   id: number;
-  namaUPPS: string;
-  institusiId?: number;
-  institusi?: { id: number; nama: string };
+  kodeUpps: string;
+  namaUpps: string;
+  institusiId: number;
   namaPimpinan?: string;
+  jabatanPimpinan?: string;
+  alamat?: string;
+  telepon?: string;
   email?: string;
-  telpNo?: string;
+  website?: string;
   isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export default function UPPSPage() {
@@ -93,11 +102,15 @@ export default function UPPSPage() {
   const onSubmit = async (formData: UPPSFormData) => {
     try {
       const payload = {
-        namaUPPS: formData.namaUPPS,
-        institusiId: formData.institusiId ? Number(formData.institusiId) : undefined,
-        namaPimpinan: formData.namaPimpinan,
-        email: formData.email,
-        telpNo: formData.telpNo,
+        kodeUpps: formData.kodeUpps,
+        namaUpps: formData.namaUpps,
+        institusiId: Number(formData.institusiId),
+        namaPimpinan: formData.namaPimpinan || undefined,
+        jabatanPimpinan: formData.jabatanPimpinan || undefined,
+        alamat: formData.alamat || undefined,
+        telepon: formData.telepon || undefined,
+        email: formData.email || undefined,
+        website: formData.website || undefined,
         isActive: formData.isActive,
       };
 
@@ -120,11 +133,15 @@ export default function UPPSPage() {
   const handleEdit = (item: UPPS) => {
     setEditingId(item.id);
     reset({
-      namaUPPS: item.namaUPPS,
-      institusiId: item.institusiId ? String(item.institusiId) : '',
+      kodeUpps: item.kodeUpps,
+      namaUpps: item.namaUpps,
+      institusiId: String(item.institusiId),
       namaPimpinan: item.namaPimpinan || '',
+      jabatanPimpinan: item.jabatanPimpinan || '',
+      alamat: item.alamat || '',
+      telepon: item.telepon || '',
       email: item.email || '',
-      telpNo: item.telpNo || '',
+      website: item.website || '',
       isActive: item.isActive,
     });
     setIsFormOpen(true);
@@ -158,12 +175,9 @@ export default function UPPSPage() {
   }
 
   const columns = [
-    { key: 'namaUPPS', label: 'Nama UPPS' },
-    { 
-      key: 'institusi', 
-      label: 'Institusi',
-      render: (_: unknown, row: UPPS) => row.institusi?.nama || '-'
-    },
+    { key: 'kodeUpps', label: 'Kode UPPS' },
+    { key: 'namaUpps', label: 'Nama UPPS' },
+    { key: 'institusiId', label: 'ID Institusi' },
     { key: 'namaPimpinan', label: 'Pimpinan' },
     {
       key: 'isActive',
@@ -223,13 +237,21 @@ export default function UPPSPage() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
               <FormSection title="Informasi UPPS">
-                <FormGrid cols={1}>
+                <FormGrid cols={2}>
                   <Input
-                    label="Nama UPPS"
-                    placeholder="Contoh: Fakultas Teknik"
-                    error={errors.namaUPPS?.message}
-                    {...register('namaUPPS')}
+                    label="Kode UPPS"
+                    placeholder="Contoh: UPPS001"
+                    error={errors.kodeUpps?.message}
+                    {...register('kodeUpps')}
                   />
+                  <div className="col-span-2">
+                    <Input
+                      label="Nama UPPS"
+                      placeholder="Contoh: Fakultas Teknik"
+                      error={errors.namaUpps?.message}
+                      {...register('namaUpps')}
+                    />
+                  </div>
                   <Select
                     label="Institusi"
                     options={institusiOptions}
@@ -237,9 +259,19 @@ export default function UPPSPage() {
                     {...register('institusiId')}
                   />
                   <Input
+                    label="Jabatan Pimpinan"
+                    placeholder="Contoh: Dekan"
+                    {...register('jabatanPimpinan')}
+                  />
+                  <Input
                     label="Nama Pimpinan"
                     placeholder="Nama dekan/pimpinan"
                     {...register('namaPimpinan')}
+                  />
+                  <Input
+                    label="Telepon"
+                    placeholder="08123456789"
+                    {...register('telepon')}
                   />
                   <Input
                     label="Email"
@@ -248,10 +280,17 @@ export default function UPPSPage() {
                     {...register('email')}
                   />
                   <Input
-                    label="Nomor Telepon"
-                    placeholder="08123456789"
-                    {...register('telpNo')}
+                    label="Website"
+                    placeholder="https://example.com"
+                    {...register('website')}
                   />
+                  <div className="col-span-2">
+                    <Input
+                      label="Alamat"
+                      placeholder="Jalan, nomor, blok"
+                      {...register('alamat')}
+                    />
+                  </div>
                 </FormGrid>
               </FormSection>
 

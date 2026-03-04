@@ -1,0 +1,42 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+      - id: end-of-file-fixer
+        name: Fix end of file
+      - id: check-yaml
+        name: Check YAML
+      - id: check-json
+        name: Check JSON
+      - id: check-merge-conflict
+        name: Check merge conflicts
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+        name: Check large files
+
+  - repo: https://github.com/prettier/pre-commit
+    rev: v3.0.0
+    hooks:
+      - id: prettier
+        name: Prettier formatter
+        types_or: [javascript, typescript, jsx, tsx, json, markdown]
+        args: ['--write']
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.28.0
+    hooks:
+      - id: yamllint
+        name: YAML linter
+        args: [--strict]
+
+  - repo: local
+    hooks:
+      - id: hardhat-compile
+        name: Hardhat compile
+        entry: bash -c 'cd blockchain && npx hardhat compile --force'
+        language: system
+        files: ^blockchain/contracts/.*\.sol$
+        pass_filenames: false
+        stages: [commit]

@@ -1,0 +1,51 @@
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+logs/
+
+# Blockchain
+blockchain/besu/node*/data/
+blockchain/artifacts/
+blockchain/cache/
+
+# Backend
+backend/node_modules/
+backend/dist/
+
+# IPFS
+ipfs/data/
+ipfs/staging/
+
+# Database
+database/mysql-data/
+database/redis-data/
+database/blockscout-data/
+
+# Temporary files
+*.tmp
+*.temp

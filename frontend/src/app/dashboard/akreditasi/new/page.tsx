@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import { jenjangApi } from '@/lib/api';
+import { DropdownMappers, DropdownDefaults } from '@/lib/dropdown-helpers';
 import {
   Card,
   CardHeader,
@@ -15,7 +17,7 @@ import {
   Input,
   Select,
 } from '@/components/ui';
-import { ArrowLeft, Save, GraduationCap } from 'lucide-react';
+import { ArrowLeft, Save, GraduationCap, Loader2 } from 'lucide-react';
 
 const akreditasiSchema = z.object({
   namaProdi: z.string().min(1, 'Nama program studi wajib diisi'),
@@ -59,6 +61,32 @@ const peringkatOptions = [
 export default function NewAkreditasiPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingJenjang, setLoadingJenjang] = useState(true);
+  const [jenjangOpts, setJenjangOpts] = useState([DropdownDefaults.jenjang]);
+
+  // Fetch jenjang on mount
+  useEffect(() => {
+    const fetchJenjang = async () => {
+      try {
+        const response = await jenjangApi.getAll();
+        setJenjangOpts([
+          DropdownDefaults.jenjang,
+          ...DropdownMappers.jenjang(response.data as any[]),
+        ]);
+      } catch (error) {
+        console.error('Failed to load jenjang:', error);
+        // Fallback to static options
+        setJenjangOpts([
+          DropdownDefaults.jenjang,
+          ...jenjangOptions,
+        ]);
+      } finally {
+        setLoadingJenjang(false);
+      }
+    };
+
+    fetchJenjang();
+  }, []);
 
   const {
     register,
@@ -136,9 +164,10 @@ export default function NewAkreditasiPage() {
                 </div>
                 <Select
                   label="Jenjang"
-                  options={jenjangOptions}
+                  options={jenjangOpts}
                   placeholder="Pilih jenjang"
                   error={errors.jenjang?.message}
+                  disabled={loadingJenjang}
                   {...register('jenjang')}
                 />
                 <Select

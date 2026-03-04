@@ -235,3 +235,193 @@ export function useDebounce<T>(value: T, delay: number): T {
 
   return debouncedValue;
 }
+
+// ============================================================
+// CUSTOM HOOKS FOR AKREDITASI WORKFLOW
+// ============================================================
+
+import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
+import type {
+  Akreditasi,
+  StatusAkreditasi,
+  AsesmenKecukupan,
+  AsesmenLapangan,
+} from '@/types';
+
+// Hook for managing workflow steps
+export function useWorkflowSteps() {
+  const steps: StatusAkreditasi[] = [
+    'REGISTRASI',
+    'VERIFIKASI_DOKUMEN',
+    'PEMBAYARAN',
+    'PENAWARAN_ASESOR',
+    'ASESMEN_KECUKUPAN',
+    'PENGESAHAN_AK',
+    'ASESMEN_LAPANGAN',
+    'TANGGAPAN_AL',
+    'PENGESAHAN_AL',
+    'PENETAPAN_PERINGKAT',
+    'SINKRONISASI_BANPT',
+    'SELESAI',
+  ];
+
+  const stepTitles: Record<StatusAkreditasi, string> = {
+    REGISTRASI: 'Registrasi',
+    VERIFIKASI_DOKUMEN: 'Verifikasi Dokumen',
+    PEMBAYARAN: 'Pembayaran',
+    PENAWARAN_ASESOR: 'Penawaran Asesor',
+    ASESMEN_KECUKUPAN: 'Asesmen Kecukupan',
+    PENGESAHAN_AK: 'Pengesahan AK',
+    ASESMEN_LAPANGAN: 'Asesmen Lapangan',
+    TANGGAPAN_AL: 'Tanggapan AL',
+    PENGESAHAN_AL: 'Pengesahan AL',
+    PENETAPAN_PERINGKAT: 'Penetapan Peringkat',
+    SINKRONISASI_BANPT: 'Sinkronisasi BANPT',
+    SELESAI: 'Selesai',
+  };
+
+  const getStepIndex = (status: StatusAkreditasi) => steps.indexOf(status);
+  const getProgress = (status: StatusAkreditasi) => {
+    const index = getStepIndex(status);
+    return Math.round(((index + 1) / steps.length) * 100);
+  };
+
+  const getNextStep = (status: StatusAkreditasi) => {
+    const index = getStepIndex(status);
+    return steps[index + 1] || status;
+  };
+
+  return {
+    steps,
+    stepTitles,
+    getStepIndex,
+    getProgress,
+    getNextStep,
+  };
+}
+
+// Hook for async operations with loading state
+export function useAsync<T>(asyncFn: () => Promise<T>) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [data, setData] = useState<T | null>(null);
+
+  const execute = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await asyncFn();
+      setData(result);
+      return result;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [asyncFn]);
+
+  return { data, loading, error, execute };
+}
+
+// Hook for form validation
+export function useFormValidation<T extends Record<string, any>>(
+  initialValues: T,
+  validate?: (values: T) => Partial<Record<keyof T, string>>
+) {
+  const [values, setValues] = useState(initialValues);
+  const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
+  const [touched, setTouched] = useState<Partial<Record<keyof T, boolean>>>({});
+
+  const handleChange = useCallback(
+    (field: keyof T) => (value: any) => {
+      setValues((prev) => ({ ...prev, [field]: value }));
+      if (touched[field] && validate) {
+        const fieldErrors = validate({ ...values, [field]: value });
+        setErrors((prev) => ({
+          ...prev,
+          [field]: fieldErrors[field],
+        }));
+      }
+    },
+    [touched, validate, values]
+  );
+
+  const handleBlur = useCallback((field: keyof T) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    if (validate) {
+      const fieldErrors = validate(values);
+      setErrors((prev) => ({
+        ...prev,
+        [field]: fieldErrors[field],
+      }));
+    }
+  }, [validate, values]);
+
+  const handleSubmit = useCallback(
+    async (onSubmit: (values: T) => Promise<void>) => {
+      return async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (validate) {
+          const newErrors = validate(values);
+          setErrors(newErrors);
+          if (Object.keys(newErrors).length > 0) {
+            toast.error('Please correct the errors in the form');
+            return;
+          }
+        }
+        try {
+          await onSubmit(values);
+          setValues(initialValues);
+          setTouched({});
+        } catch (error) {
+          console.error('Form submission error:', error);
+        }
+      };
+    },
+    [values, validate, initialValues]
+  );
+
+  const reset = useCallback(() => {
+    setValues(initialValues);
+    setErrors({});
+    setTouched({});
+  }, [initialValues]);
+
+  return {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    handleSubmit,
+    reset,
+    setValues,
+    setErrors,
+  };
+}
+
+// Hook for breadcrumb navigation
+export function useBreadcrumb() {
+  const [breadcrumbs, setBreadcrumbs] = useState<
+    Array<{ label: string; href?: string }>
+  >([]);
+
+  const addBreadcrumb = useCallback(
+    (label: string, href?: string) => {
+      setBreadcrumbs((prev) => [
+        ...prev.filter((b) => b.href !== href),
+        { label, href },
+      ]);
+    },
+    []
+  );
+
+  const clearBreadcrumbs = useCallback(() => {
+    setBreadcrumbs([]);
+  }, []);
+
+  return { breadcrumbs, addBreadcrumb, clearBreadcrumbs };
+}

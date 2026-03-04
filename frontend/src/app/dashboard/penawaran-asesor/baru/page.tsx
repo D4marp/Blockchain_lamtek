@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { asesorApi, registrasiAkreditasiApi } from '@/lib/api';
+import { DropdownMappers, DropdownDefaults } from '@/lib/dropdown-helpers';
 import {
   Card,
   Button,
@@ -16,6 +18,7 @@ import { FormSection, FormGrid, FormActions, TextareaField } from '@/components/
 import {
   ArrowLeft,
   Send,
+  Loader2,
 } from 'lucide-react';
 
 const penawaranSchema = z.object({
@@ -27,23 +30,43 @@ const penawaranSchema = z.object({
 
 type PenawaranFormData = z.infer<typeof penawaranSchema>;
 
-const akreditasiOptions = [
-  { value: '', label: 'Pilih akreditasi' },
-  { value: '1', label: 'REG-2024-001 - Teknik Kimia (Universitas Borneo)' },
-  { value: '2', label: 'REG-2024-002 - Teknik Mesin (Universitas Garuda)' },
-  { value: '3', label: 'REG-2024-003 - Teknik Elektro (Universitas Cakra)' },
-];
-
-const asesorOptions = [
-  { value: '', label: 'Pilih asesor' },
-  { value: '37', label: 'Prof. Dr. Abdul Chalim - Teknik Mesin' },
-  { value: '122', label: 'Prof. Dr. Abdul Ghafur - Teknik Kimia' },
-  { value: '189', label: 'Prof. Dr. Abdul Rahman - Teknik Kimia' },
-  { value: '197', label: 'Dr. Ir. Abdul Muis - Teknik Mesin' },
-];
-
 export default function PenawaranBaruPage() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [akreditasiOptions, setAkreditasiOptions] = useState([DropdownDefaults.institusi]);
+  const [asesorOptions, setAsesorOptions] = useState([DropdownDefaults.asesor]);
+
+  // Fetch data on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [regisRes, asesorRes] = await Promise.all([
+          registrasiAkreditasiApi.getAll(),
+          asesorApi.getAll(),
+        ]);
+
+        setAkreditasiOptions([
+          DropdownDefaults.institusi,
+          ...(regisRes.data as any[]).map((r: any) => ({
+            value: r.id.toString(),
+            label: `${r.kodeRegistrasi || 'REG-' + r.id} - ${r.prodi?.nama || 'N/A'} (${r.institusi?.nama || 'N/A'})`,
+          })),
+        ]);
+
+        setAsesorOptions([
+          DropdownDefaults.asesor,
+          ...DropdownMappers.asesor(asesorRes.data as any[]),
+        ]);
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+        toast.error('Gagal memuat data akreditasi dan asesor');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const {
     register,
@@ -57,13 +80,22 @@ export default function PenawaranBaruPage() {
 
   const onSubmit = async (data: PenawaranFormData) => {
     try {
+      // TODO: Replace with actual API call when endpoint is available
       await new Promise((resolve) => setTimeout(resolve, 1500));
       toast.success('Penawaran berhasil dikirim');
       router.push('/dashboard/penawaran-asesor');
-    } catch (error) {
-      toast.error('Gagal mengirim penawaran');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Gagal mengirim penawaran');
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -110,6 +142,7 @@ export default function PenawaranBaruPage() {
             <TextareaField
               label="Catatan Penawaran"
               placeholder="Informasi tambahan untuk asesor..."
+
               value={watch('catatanPenawaran') || ''}
               onChange={(val) => setValue('catatanPenawaran', val)}
               rows={4}

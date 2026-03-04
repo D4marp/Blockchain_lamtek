@@ -1,14 +1,9 @@
 {
   "pages": {
-    "/dashboard/registrasi/page": [
+    "/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/registrasi/page.js"
-    ],
-    "/dashboard/layout": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/layout.js"
+      "static/chunks/app/page.js"
     ],
     "/layout": [
       "static/chunks/webpack.js",
@@ -16,170 +11,15 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/dashboard/verifikasi-registrasi/page": [
+    "/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/verifikasi-registrasi/page.js"
+      "static/chunks/app/login/page.js"
     ],
-    "/dashboard/penawaran-asesor/page": [
+    "/login/error": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/penawaran-asesor/page.js"
-    ],
-    "/dashboard/registrasi/baru/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/registrasi/baru/page.js"
-    ],
-    "/dashboard/master-data/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/page.js"
-    ],
-    "/dashboard/master-data/bank/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/bank/page.js"
-    ],
-    "/dashboard/master-data/skema-pembayaran/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/skema-pembayaran/page.js"
-    ],
-    "/dashboard/respon-asesor/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/respon-asesor/page.js"
-    ],
-    "/dashboard/asesmen-kecukupan/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/asesmen-kecukupan/page.js"
-    ],
-    "/dashboard/pengesahan-ak/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/pengesahan-ak/page.js"
-    ],
-    "/dashboard/tanggapan-al/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/tanggapan-al/page.js"
-    ],
-    "/dashboard/pengesahan-al/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/pengesahan-al/page.js"
-    ],
-    "/dashboard/keputusan-ma/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/keputusan-ma/page.js"
-    ],
-    "/dashboard/sinkronisasi-banpt/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/sinkronisasi-banpt/page.js"
-    ],
-    "/dashboard/master-data/asesor/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/asesor/page.js"
-    ],
-    "/dashboard/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/page.js"
-    ],
-    "/dashboard/master-data/upps/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/upps/page.js"
-    ],
-    "/dashboard/master-data/komite-evaluasi/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/komite-evaluasi/page.js"
-    ],
-    "/dashboard/master-data/majelis-akreditasi/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/majelis-akreditasi/page.js"
-    ],
-    "/dashboard/master-data/institusi/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/institusi/page.js"
-    ],
-    "/dashboard/master-data/prodi/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/prodi/page.js"
-    ],
-    "/dashboard/master-data/status-institusi/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/status-institusi/page.js"
-    ],
-    "/dashboard/master-data/jenjang/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/jenjang/page.js"
-    ],
-    "/dashboard/master-data/sekretariat/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/sekretariat/page.js"
-    ],
-    "/dashboard/master-data/provinsi/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/provinsi/page.js"
-    ],
-    "/dashboard/master-data/klaster-ilmu/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/klaster-ilmu/page.js"
-    ],
-    "/dashboard/master-data/klaster-prodi/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/klaster-prodi/page.js"
-    ],
-    "/dashboard/master-data/klaster-profesi/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/klaster-profesi/page.js"
-    ],
-    "/dashboard/master-data/status-sk/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/status-sk/page.js"
-    ],
-    "/dashboard/master-data/kriteria-penilaian/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/master-data/kriteria-penilaian/page.js"
-    ],
-    "/dashboard/asesmen-lapangan/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/asesmen-lapangan/page.js"
-    ],
-    "/dashboard/registrasi-prodi-baru/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/registrasi-prodi-baru/page.js"
-    ],
-    "/dashboard/penunjukan-validator/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/dashboard/penunjukan-validator/page.js"
-    ],
-    "/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/page.js"
+      "static/chunks/app/login/error.js"
     ]
   }
 }

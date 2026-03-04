@@ -1,7 +1,4 @@
 {
-  "/page": "app/page.js",
-  "/dashboard/master-data/klaster-ilmu/page": "app/dashboard/master-data/klaster-ilmu/page.js",
-  "/dashboard/penunjukan-validator/page": "app/dashboard/penunjukan-validator/page.js",
-  "/dashboard/master-data/klaster-profesi/page": "app/dashboard/master-data/klaster-profesi/page.js",
-  "/dashboard/master-data/status-sk/page": "app/dashboard/master-data/status-sk/page.js"
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js"
 }

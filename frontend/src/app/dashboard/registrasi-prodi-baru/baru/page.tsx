@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
+import { institusiApi, jenjangApi } from '@/lib/api';
+import { DropdownMappers, DropdownDefaults } from '@/lib/dropdown-helpers';
 import {
   Card,
   Button,
@@ -23,6 +25,7 @@ import {
   Building,
   FileText,
   GraduationCap,
+  Loader2,
 } from 'lucide-react';
 
 const schema = z.object({
@@ -49,7 +52,7 @@ const dummyInstitusi = [
   { id: '5', nama: 'Universitas Swasta ABC', jenisPT: 'PTS' },
 ];
 
-const jenjangOptions = [
+const defaultJenjangOptions = [
   { value: 'D3', label: 'D3 - Diploma Tiga' },
   { value: 'D4', label: 'D4 - Diploma Empat' },
   { value: 'S1', label: 'S1 - Sarjana' },
@@ -60,7 +63,10 @@ const jenjangOptions = [
 export default function FormRegistrasiProdiBaruPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [institusiOptions, setInstitusiOptions] = useState<typeof dummyInstitusi>([]);
   const [selectedInstitusi, setSelectedInstitusi] = useState<typeof dummyInstitusi[0] | null>(null);
+  const [jenjangOpts, setJenjangOpts] = useState(defaultJenjangOptions);
   const [dokumen, setDokumen] = useState({
     proposal: null as File | null,
     kurikulum: null as File | null,
@@ -68,6 +74,40 @@ export default function FormRegistrasiProdiBaruPage() {
     dokumenDosen: null as File | null,
     sarpras: null as File | null,
   });
+
+  // Fetch institusi and jenjang on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [institusiRes, jenjangRes] = await Promise.all([
+          institusiApi.getAll(),
+          jenjangApi.getAll(),
+        ]);
+
+        // Transform institusi data to match form structure
+        const institusiData = (institusiRes.data as any[]).map((i: any) => ({
+          id: i.id.toString(),
+          nama: i.namaInstitusi || i.nama,
+          jenisPT: i.jenisPt || 'PTS',
+        }));
+        setInstitusiOptions(institusiData);
+
+        // Transform jenjang data using mapper
+        const jenjangData = DropdownMappers.jenjang(jenjangRes.data as any[]);
+        setJenjangOpts(jenjangData as any);
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+        toast.error('Gagal memuat data institusi dan jenjang');
+        // Fallback to dummy data
+        setInstitusiOptions(dummyInstitusi);
+        setJenjangOpts(defaultJenjangOptions);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const {
     register,
@@ -82,7 +122,7 @@ export default function FormRegistrasiProdiBaruPage() {
   const handleInstitusiChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value;
     setValue('institusiId', id);
-    const institusi = dummyInstitusi.find((i) => i.id === id);
+    const institusi = institusiOptions.find((i) => i.id === id);
     setSelectedInstitusi(institusi || null);
     if (institusi) {
       setValue('jenisPT', institusi.jenisPT);
@@ -136,12 +176,15 @@ export default function FormRegistrasiProdiBaruPage() {
                 <select
                   {...register('institusiId')}
                   onChange={handleInstitusiChange}
-                  className="w-full px-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  disabled={loading}
+                  className="w-full px-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-secondary-100"
                 >
-                  <option value="">-- Pilih Institusi --</option>
-                  {dummyInstitusi.map((institusi) => (
-                    <option key={institusi.id} value={institusi.id}>
-                      {institusi.nama} ({institusi.jenisPT.replace('_', ' ')})
+                  <option value="">
+                    {loading ? 'Memuat data...' : '-- Pilih Institusi --'}
+                  </option>
+                  {institusiOptions.map((institusi) => (
+                    <option key={institusi.value} value={institusi.value}>
+                      {institusi.label}
                     </option>
                   ))}
                 </select>
@@ -210,10 +253,13 @@ export default function FormRegistrasiProdiBaruPage() {
                 </label>
                 <select
                   {...register('jenjang')}
-                  className="w-full px-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  disabled={loading}
+                  className="w-full px-4 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-secondary-100"
                 >
-                  <option value="">-- Pilih Jenjang --</option>
-                  {jenjangOptions.map((opt) => (
+                  <option value="">
+                    {loading ? 'Memuat data...' : '-- Pilih Jenjang --'}
+                  </option>
+                  {jenjangOpts.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>

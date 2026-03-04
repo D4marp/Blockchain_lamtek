@@ -26,10 +26,6 @@ metrics-port=9545
 min-gas-price=0
 target-gas-limit=30000000
 
-# Transaction pool
-tx-pool-max-size=4096
-tx-pool-price-bump=10
-
 # Revert reason for debugging
 revert-reason-enabled=true
 

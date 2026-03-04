@@ -370,13 +370,11 @@ services:
     image: redis:7-alpine
     container_name: lamtek-redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
     volumes:
       - ./database/redis-data:/data
     networks:
       - lamtek-network
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --port 6379
 
   # Blockchain Explorer
   blockscout:

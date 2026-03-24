@@ -1,0 +1,223 @@
+version: '3.8'
+
+services:
+  # Frontend - Next.js
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: lamtek-frontend
+    restart: always
+    ports:
+      - "${FRONTEND_PORT:-3002}:3002"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - api-gateway
+    networks:
+      - lamtek-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3002/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Backend - NestJS API Gateway
+  api-gateway:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lamtek-api-gateway
+    restart: always
+    ports:
+      - "${BACKEND_PORT:-3001}:3000"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3000
+      - DATABASE_URL=${DATABASE_URL:-mysql://lamtek:lamtek123@mysql:3306/lamtek_db}
+      - BESU_RPC_URL=${BESU_RPC_URL:-http://besu-node1:8545}
+      - BESU_WS_URL=${BESU_WS_URL:-ws://besu-node1:8546}
+      - IPFS_API_URL=${IPFS_API_URL:-http://ipfs-node:5001}
+      - IPFS_GATEWAY_URL=${IPFS_GATEWAY_URL:-http://ipfs-node:8888}
+      - JWT_SECRET=${JWT_SECRET:-lamtek-secret-key-2025}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-24h}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - KAFKA_BROKERS=${KAFKA_BROKERS:-kafka:9092}
+      - KAFKA_CLIENT_ID=${KAFKA_CLIENT_ID:-lamtek-backend}
+      - KAFKA_GROUP_ID=${KAFKA_GROUP_ID:-lamtek-consumer-group}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src
+    networks:
+      - lamtek-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0-alpine
+    container_name: lamtek-mysql
+    restart: always
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-lamtek_db}
+      - MYSQL_USER=${MYSQL_USER:-lamtek}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-lamtek123}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - lamtek-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: lamtek-redis
+    restart: always
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - lamtek-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # IPFS Node
+  ipfs-node:
+    image: ipfs/kubo:latest
+    container_name: lamtek-ipfs
+    restart: always
+    ports:
+      - "${IPFS_SWARM_PORT:-4001}:4001"
+      - "${IPFS_API_PORT:-5001}:5001"
+      - "${IPFS_GATEWAY_PORT:-8888}:8080"
+    volumes:
+      - ipfs-data:/root/.ipfs
+    networks:
+      - lamtek-network
+    environment:
+      - IPFS_PROFILE=server
+    healthcheck:
+      test: ["CMD", "ipfs", "dag", "stat", "QmUNLLsPACCz1vLxQVkXqqLX5R1X345qqfHbsf67hvA3Nn"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # Zookeeper (for Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0-alpine
+    container_name: lamtek-zookeeper
+    restart: always
+    ports:
+      - "${ZOOKEEPER_PORT:-2181}:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-log:/var/lib/zookeeper/log
+    networks:
+      - lamtek-network
+
+  # Kafka Message Broker
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0-alpine
+    container_name: lamtek-kafka
+    restart: always
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+      - "${KAFKA_HOST_PORT:-29092}:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    depends_on:
+      - zookeeper
+    networks:
+      - lamtek-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Besu Node 1 (Blockchain)
+  besu-node1:
+    image: hyperledger/besu:latest
+    container_name: lamtek-besu-node1
+    restart: always
+    ports:
+      - "${BESU_RPC_PORT:-8545}:8545"
+      - "${BESU_WS_PORT:-8546}:8546"
+      - "${BESU_P2P_PORT:-30303}:30303"
+    volumes:
+      - ./blockchain/besu/config.toml:/etc/besu/config.toml:ro
+      - ./blockchain/besu/genesis.json:/etc/besu/genesis.json:ro
+      - besu-node1-data:/data
+    networks:
+      - lamtek-network
+    command:
+      - "--config-file=/etc/besu/config.toml"
+      - "--genesis-file=/etc/besu/genesis.json"
+      - "--data-path=/data"
+      - "--rpc-http-enabled"
+      - "--rpc-http-host=0.0.0.0"
+      - "--rpc-http-port=8545"
+      - "--rpc-ws-enabled"
+      - "--rpc-ws-host=0.0.0.0"
+      - "--rpc-ws-port=8546"
+      - "--p2p-port=30303"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8545"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  lamtek-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:
+  ipfs-data:
+  zookeeper-data:
+  zookeeper-log:
+  kafka-data:
+  besu-node1-data:

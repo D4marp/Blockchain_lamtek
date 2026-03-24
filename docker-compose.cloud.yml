@@ -1,0 +1,100 @@
+version: '3.8'
+
+# Production-ready docker-compose untuk Cloud Run / Cloud Platform
+# Optimized untuk stateless deployment
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: lamtek/frontend:${VERSION:-latest}
+    container_name: lamtek-frontend
+    restart: always
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+    depends_on:
+      - api-gateway
+    networks:
+      - lamtek-network
+
+  api-gateway:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: lamtek/api-gateway:${VERSION:-latest}
+    container_name: lamtek-api-gateway
+    restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=${DATABASE_URL}
+      - BESU_RPC_URL=${BESU_RPC_URL}
+      - BESU_WS_URL=${BESU_WS_URL}
+      - IPFS_API_URL=${IPFS_API_URL}
+      - IPFS_GATEWAY_URL=${IPFS_GATEWAY_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=24h
+      - REDIS_URL=${REDIS_URL}
+      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - KAFKA_CLIENT_ID=lamtek-backend
+      - KAFKA_GROUP_ID=lamtek-consumer-group
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - lamtek-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  mysql:
+    image: mysql:8.0-alpine
+    container_name: lamtek-mysql
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-lamtek_db}
+      - MYSQL_USER=${MYSQL_USER:-lamtek}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - lamtek-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: lamtek-redis
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    volumes:
+      - redis-data:/data
+    networks:
+      - lamtek-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  lamtek-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:

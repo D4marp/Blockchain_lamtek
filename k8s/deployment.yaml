@@ -1,0 +1,221 @@
+# Kubernetes Deployment Configuration
+# For deploying to Kubernetes-based PaaS (GKE, AKS, EKS, etc.)
+
+---
+# ConfigMap for application configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lamtek-config
+  namespace: default
+data:
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"
+  BESU_RPC_URL: "http://besu-node1:8545"
+  BESU_WS_URL: "ws://besu-node1:8546"
+  IPFS_API_URL: "http://ipfs-node:5001"
+  IPFS_GATEWAY_URL: "http://ipfs-node:8888"
+
+---
+# Secret for sensitive data
+apiVersion: v1
+kind: Secret
+metadata:
+  name: lamtek-secrets
+  namespace: default
+type: Opaque
+stringData:
+  JWT_SECRET: "lamtek-secret-key-2025"
+  MYSQL_PASSWORD: "lamtek123"
+  DATABASE_URL: "mysql://lamtek:lamtek123@mysql:3306/lamtek_db"
+
+---
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: lamtek/frontend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3002
+          name: http
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: lamtek-config
+              key: NODE_ENV
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3002
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: default
+spec:
+  type: LoadBalancer
+  selector:
+    app: frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3002
+
+---
+# Backend (API Gateway) Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+      - name: api-gateway
+        image: lamtek/api-gateway:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: lamtek-config
+              key: NODE_ENV
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: lamtek-secrets
+              key: DATABASE_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: lamtek-secrets
+              key: JWT_SECRET
+        - name: BESU_RPC_URL
+          valueFrom:
+            configMapKeyRef:
+              name: lamtek-config
+              key: BESU_RPC_URL
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: api-gateway
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+
+---
+# Horizontal Pod Autoscaler for Frontend
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend-hpa
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+
+---
+# Horizontal Pod Autoscaler for API Gateway
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-gateway-hpa
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-gateway
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75

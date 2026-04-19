@@ -25,7 +25,7 @@ export class DokumenController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadDokumen(
     @Param('kodeAkreditasi') kodeAkreditasi: string,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Body('tipeDokumen') tipeDokumen: TipeDokumen,
     @Body('metadata') metadata?: string,
   ) {

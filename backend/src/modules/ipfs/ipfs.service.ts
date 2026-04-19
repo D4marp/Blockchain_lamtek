@@ -28,7 +28,7 @@ export class IpfsService implements OnModuleInit {
     try {
       const response = await fetch(`${this.apiUrl}/api/v0/id`, { method: 'POST' });
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as any;
         this.logger.log(`Connected to IPFS node: ${data.ID}`);
         this.isConnected = true;
         return true;
@@ -67,7 +67,7 @@ export class IpfsService implements OnModuleInit {
   /**
    * Upload file to IPFS
    */
-  async uploadFile(file: Express.Multer.File): Promise<{
+  async uploadFile(file: any): Promise<{
     ipfsHash: string;
     url: string;
     size: number;
@@ -90,7 +90,7 @@ export class IpfsService implements OnModuleInit {
         throw new Error(`IPFS upload failed: ${response.statusText}`);
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as any;
       const ipfsHash = result.Hash;
 
       // Calculate SHA256
@@ -132,7 +132,7 @@ export class IpfsService implements OnModuleInit {
         throw new Error(`IPFS upload failed: ${response.statusText}`);
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as any;
       const ipfsHash = result.Hash;
 
       this.logger.log(`JSON uploaded to IPFS: ${ipfsHash}`);
@@ -239,7 +239,7 @@ export class IpfsService implements OnModuleInit {
         throw new Error(`Failed to get pinned files: ${response.statusText}`);
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as any;
       return Object.keys(result.Keys || {});
     } catch (error) {
       this.logger.error('Failed to get pinned files:', error);

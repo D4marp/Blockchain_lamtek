@@ -18,6 +18,13 @@ services:
       - DATABASE_URL=mysql://lamtek:lamtek123@mysql:3306/lamtek_db
       - BESU_RPC_URL=http://besu-node1:8545
       - BESU_WS_URL=ws://besu-node1:8546
+      - SIGNER_MODE=external
+      - EXTERNAL_SIGNER_RPC_URL=http://besu-node1:8545
+      - EXTERNAL_SIGNER_ADDRESS=
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=
+      - VAULT_SECRET_PATH=secret/data/lamtek/blockchain
+      - VAULT_SECRET_KEY=privateKey
       - IPFS_API_URL=http://ipfs-node:5001
       - IPFS_GATEWAY_URL=http://ipfs-node:8888
       - JWT_SECRET=${JWT_SECRET:-lamtek-secret-key-2025}
@@ -26,6 +33,9 @@ services:
       - KAFKA_BROKERS=kafka:9092
       - KAFKA_CLIENT_ID=lamtek-backend
       - KAFKA_GROUP_ID=lamtek-consumer-group
+      - KAFKA_CONSUMER_CLIENT_ID=lamtek-backend-consumer
+      - KAFKA_CONSUMER_GROUP_ID=lamtek-consumer-runtime-group
+      - DATA_FILE_WORKFLOW_MODE=kafka
     depends_on:
       - mysql
       - redis

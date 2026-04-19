@@ -1,4 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'crypto';
+import { KafkaService, KafkaTopic } from '../kafka/kafka.service';
 import { IpfsService } from '../ipfs/ipfs.service';
 import { BlockchainService } from '../blockchain/blockchain.service';
 
@@ -23,19 +26,53 @@ export class DokumenService {
   constructor(
     private ipfsService: IpfsService,
     private blockchainService: BlockchainService,
+    private configService: ConfigService,
+    @Optional() private kafkaService?: KafkaService,
   ) {}
 
   async uploadDokumen(
     kodeAkreditasi: string,
-    file: Express.Multer.File,
+    file: any,
     tipeDokumen: TipeDokumen,
     metadata?: Record<string, any>,
   ): Promise<{
-    ipfsHash: string;
-    url: string;
-    sha256: string;
+    queued?: boolean;
+    referenceId?: string;
+    topic?: string;
+    message?: string;
+    ipfsHash?: string;
+    url?: string;
+    sha256?: string;
     blockchainTxHash?: string;
   }> {
+    const workflowMode = this.configService.get<string>('DATA_FILE_WORKFLOW_MODE', 'sync');
+
+    if (workflowMode === 'kafka' && this.kafkaService?.isKafkaConnected()) {
+      const referenceId = randomUUID();
+
+      await this.kafkaService.publishDataFile(
+        {
+          operation: 'upload',
+          referenceId,
+          kodeAkreditasi,
+          tipeDokumen,
+          fileName: file.originalname,
+          mimeType: file.mimetype,
+          contentBase64: Buffer.from(file.buffer).toString('base64'),
+          metadata,
+          emittedAt: new Date().toISOString(),
+        },
+        referenceId,
+      );
+
+      return {
+        queued: true,
+        referenceId,
+        topic: KafkaTopic.DATA_FILE,
+        message: 'Document queued for Kafka connector workflow',
+      };
+    }
+
     // Upload to IPFS
     const { ipfsHash, url, sha256 } = await this.ipfsService.uploadFile(file);
 

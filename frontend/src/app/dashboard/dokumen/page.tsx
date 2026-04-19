@@ -24,7 +24,7 @@ import {
   Search,
   Filter,
   FileText,
-  Image,
+  Image as ImageIcon,
   File,
   Download,
   Trash2,
@@ -71,7 +71,7 @@ const kategoriOptions = [
 ];
 
 const getFileIcon = (mimeType: string) => {
-  if (mimeType.startsWith('image/')) return <Image className="w-5 h-5 text-success-600" />;
+  if (mimeType.startsWith('image/')) return <ImageIcon className="w-5 h-5 text-success-600" />;
   if (mimeType === 'application/pdf') return <FileText className="w-5 h-5 text-danger-600" />;
   return <File className="w-5 h-5 text-primary-600" />;
 };

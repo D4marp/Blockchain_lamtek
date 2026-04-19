@@ -63,7 +63,7 @@ export class AsesmenLapanganController {
       tglVisitasiAkhir: Date;
       noSuratTugas: string;
     },
-    @UploadedFile() suratTugasFile?: Express.Multer.File,
+    @UploadedFile() suratTugasFile?: any,
   ) {
     return this.service.setJadwalVisitasi(id, {
       ...data,
@@ -82,9 +82,9 @@ export class AsesmenLapanganController {
   async submitLaporan(
     @Param('id', ParseIntPipe) id: number,
     @UploadedFiles() files: {
-      laporanAL?: Express.Multer.File[];
-      beritaAcara?: Express.Multer.File[];
-      umpanBalik?: Express.Multer.File[];
+      laporanAL?: any[];
+      beritaAcara?: any[];
+      umpanBalik?: any[];
     },
   ) {
     return this.service.submitLaporan(id, {
@@ -100,7 +100,7 @@ export class AsesmenLapanganController {
   @UseInterceptors(FileInterceptor('file'))
   async submitTanggapan(
     @Param('id', ParseIntPipe) id: number,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Body('dariUPPS') dariUPPS: string,
   ) {
     return this.service.submitTanggapan(id, file, dariUPPS === 'true');

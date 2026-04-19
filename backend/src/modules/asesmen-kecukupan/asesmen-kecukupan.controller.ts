@@ -58,7 +58,7 @@ export class AsesmenKecukupanController {
   @UseInterceptors(FileInterceptor('file'))
   async submitLaporan(
     @Param('id', ParseIntPipe) id: number,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Body('deskripsi') deskripsi: string,
   ) {
     return this.service.submitLaporan(id, file, deskripsi);

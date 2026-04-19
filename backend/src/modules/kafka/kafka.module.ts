@@ -2,6 +2,7 @@ import { Module, Global } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { KafkaService } from './kafka.service';
 import { KafkaController } from './kafka.controller';
+import { ConnectorService } from './connector.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Global()
@@ -28,7 +29,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     ]),
   ],
   controllers: [KafkaController],
-  providers: [KafkaService],
-  exports: [KafkaService],
+  providers: [KafkaService, ConnectorService],
+  exports: [KafkaService, ConnectorService],
 })
 export class KafkaModule {}

@@ -45,7 +45,7 @@ export class AsesmenKecukupanService {
 
   async submitLaporan(
     id: number,
-    file: Express.Multer.File,
+    file: any,
     deskripsi: string,
   ): Promise<AsesmenKecukupan> {
     const asesmen = await this.findOne(id);

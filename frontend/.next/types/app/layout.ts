@@ -1,4 +1,4 @@
-// File: /Users/HCMPublic/Kuliah/Project/Saas_Blockchain_Lamtek/frontend/src/app/layout.tsx
+// File: /Users/HCMPublic/Kuliah/Blockchain_lamtek/frontend/src/app/layout.tsx
 import * as entry from '../../../src/app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

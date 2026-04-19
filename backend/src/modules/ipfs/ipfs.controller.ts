@@ -43,7 +43,7 @@ export class IpfsController {
   @ApiOperation({ summary: 'Upload file to IPFS' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+  async uploadFile(@UploadedFile() file: any) {
     return this.ipfsService.uploadFile(file);
   }
 

@@ -3,6 +3,16 @@ import { ClientKafka } from '@nestjs/microservices';
 
 // Kafka Topics for LAM Teknik System
 export enum KafkaTopic {
+  // CDC Topics from Debezium
+  CDC_USERS = 'cdc-lamtek-users',
+  CDC_AKREDITASI = 'cdc-lamtek-akreditasi',
+  CDC_INSTITUSI = 'cdc-lamtek-institusi',
+
+  // Normalized Data Pipeline Topics
+  DATA_QUERY = 'lamtek.data.query',
+  DATA_QUERY_SOFT_DELETE = 'lamtek.data.query.soft-delete',
+  DATA_FILE = 'lamtek.data.file',
+
   // Blockchain Events
   BLOCKCHAIN_TRANSACTION = 'lamtek.blockchain.transaction',
   BLOCKCHAIN_BLOCK = 'lamtek.blockchain.block',
@@ -92,6 +102,13 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Runtime connection state, useful for conditional async workflows.
+   */
+  isKafkaConnected(): boolean {
+    return this.isConnected;
+  }
+
+  /**
    * Publish a message to a Kafka topic
    */
   async publish<T>(message: KafkaMessage<T>): Promise<void> {
@@ -120,6 +137,39 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
       this.logger.error(`Failed to publish to ${message.topic}: ${error.message}`);
       throw error;
     }
+  }
+
+  /**
+   * Publish normalized query/change events.
+   */
+  async publishDataQuery(data: Record<string, any>, key?: string): Promise<void> {
+    await this.publish({
+      topic: KafkaTopic.DATA_QUERY,
+      key,
+      value: data,
+    });
+  }
+
+  /**
+   * Publish normalized soft-delete events produced from CDC deletes.
+   */
+  async publishDataQuerySoftDelete(data: Record<string, any>, key?: string): Promise<void> {
+    await this.publish({
+      topic: KafkaTopic.DATA_QUERY_SOFT_DELETE,
+      key,
+      value: data,
+    });
+  }
+
+  /**
+   * Publish file workflow commands/events.
+   */
+  async publishDataFile(data: Record<string, any>, key?: string): Promise<void> {
+    await this.publish({
+      topic: KafkaTopic.DATA_FILE,
+      key,
+      value: data,
+    });
   }
 
   /**

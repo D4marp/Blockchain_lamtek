@@ -1,5 +1,9 @@
 require("@nomicfoundation/hardhat-toolbox");
 
+const besuAccounts = process.env.BLOCKCHAIN_PRIVATE_KEY
+  ? [process.env.BLOCKCHAIN_PRIVATE_KEY]
+  : [];
+
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
@@ -9,6 +13,7 @@ module.exports = {
         enabled: true,
         runs: 200,
       },
+      viaIR: true,
     },
   },
   networks: {
@@ -22,10 +27,7 @@ module.exports = {
     besu: {
       url: process.env.BESU_RPC_URL || "http://localhost:8545",
       chainId: 1337,
-      accounts: [
-        process.env.BLOCKCHAIN_PRIVATE_KEY || 
-        "0x8f2a55949038a9610f50fb23b5883af3b4ecb3c3bb792cbcefbd1542c692be63"
-      ],
+      accounts: besuAccounts,
       gasPrice: 0,
     },
   },

@@ -1,0 +1,237 @@
+services:
+  # MySQL Database with Binlog enabled for Debezium CDC
+  mysql:
+    image: mysql:8.0
+    container_name: lamtek-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: lamtek_dev
+      MYSQL_USER: lamtek_user
+      MYSQL_PASSWORD: lamtek_password
+    command: --server-id=1 --log-bin=mysql-bin --binlog-format=ROW --binlog-row-image=FULL --default-storage-engine=InnoDB
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - lamtek-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: lamtek-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - lamtek-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 10s
+      retries: 5
+
+  # Kafka for messaging
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: lamtek-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - lamtek-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: lamtek-kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    networks:
+      - lamtek-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
+      timeout: 10s
+      retries: 5
+
+  # Kafka Connect for Debezium CDC
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:7.5.0
+    container_name: lamtek-kafka-connect
+    depends_on:
+      - kafka
+      - mysql
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: kafka:29092
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: lamtek-connect-group
+      CONNECT_CONFIG_STORAGE_TOPIC: connect-configs
+      CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets
+      CONNECT_STATUS_STORAGE_TOPIC: connect-status
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_LOG4J_ROOT_LOGLEVEL: INFO
+      CONNECT_PLUGIN_PATH: /usr/share/java,/usr/share/confluent-hub-components
+    ports:
+      - "8083:8083"
+    volumes:
+      - kafka_connect_data:/var/lib/kafka/data
+    networks:
+      - lamtek-network
+    command: 
+      - bash
+      - -c
+      - |
+        echo "Installing Debezium connectors..."
+        confluent-hub install --no-prompt debezium/debezium-connector-mysql:latest
+        /etc/confluent/docker/run
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/"]
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # IPFS Node
+  ipfs:
+    image: ipfs/kubo:release
+    container_name: lamtek-ipfs
+    ports:
+      - "5001:5001"
+      - "8080:8080"
+    volumes:
+      - ipfs_data:/data/ipfs
+    networks:
+      - lamtek-network
+    command:
+      - daemon
+      - --migrate=true
+      - --agent-version-suffix=docker
+
+  # Hyperledger Besu (Blockchain)
+  besu:
+    image: hyperledger/besu:latest
+    container_name: lamtek-besu
+    command:
+      - --network=dev
+      - --rpc-http-enabled
+      - --rpc-http-host=0.0.0.0
+      - --rpc-http-port=8545
+      - --rpc-http-api=ETH,NET,WEB3
+      - --key-value-storage=rocksdb
+    ports:
+      - "8545:8545"
+      - "30303:30303"
+    volumes:
+      - besu_data:/data
+    networks:
+      - lamtek-network
+
+  # NestJS Backend Application
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lamtek-backend
+    depends_on:
+      - mysql
+      - redis
+      - kafka
+      - kafka-connect
+      - ipfs
+      - besu
+    environment:
+      # Node environment
+      NODE_ENV: development
+      PORT: 3001
+      HOST: 0.0.0.0
+
+      # Database
+      # Database Configuration
+      DATABASE_URL: mysql://lamtek_user:lamtek_password@mysql:3306/lamtek_dev
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USERNAME: lamtek_user
+      DB_PASSWORD: lamtek_password
+      DB_DATABASE: lamtek_dev
+      DATABASE_SYNCHRONIZE: "false"
+      DATABASE_LOGGING: "true"
+
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      # Kafka
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_CLIENT_ID: lamtek-backend-client
+      KAFKA_GROUP_ID: lamtek-consumer-group
+      KAFKA_CONSUMER_CLIENT_ID: lamtek-backend-consumer
+      KAFKA_CONSUMER_GROUP_ID: lamtek-consumer-runtime-group
+      DATA_FILE_WORKFLOW_MODE: kafka
+
+      # IPFS
+      IPFS_API_URL: http://ipfs:5001
+
+      # Blockchain (Besu)
+      BESU_RPC_URL: http://besu:8545
+      SIGNER_MODE: external
+      EXTERNAL_SIGNER_RPC_URL: http://besu:8545
+      EXTERNAL_SIGNER_ADDRESS: ""
+
+      # Vault (used when SIGNER_MODE=vault)
+      VAULT_ADDR: http://vault:8200
+      VAULT_TOKEN: ""
+      VAULT_SECRET_PATH: secret/data/lamtek/blockchain
+      VAULT_SECRET_KEY: privateKey
+
+      # JWT
+      JWT_SECRET: your-secret-key-change-this-in-production
+      JWT_EXPIRATION: 3600
+
+      # CORS
+      # Set to "*" for development (wildcard) or comma-separated domains for production
+      # Examples:
+      #   CORS_ORIGINS="*" (allow all)
+      #   CORS_ORIGINS="http://localhost:3002,http://frontend.example.com" (specific domains)
+      CORS_ORIGINS: "*"
+
+    ports:
+      - "3001:3001"
+    networks:
+      - lamtek-network
+    volumes:
+      - ./src:/app/src
+      - /app/node_modules
+    restart: unless-stopped
+
+networks:
+  lamtek-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
+  ipfs_data:
+  besu_data:
+  kafka_connect_data:

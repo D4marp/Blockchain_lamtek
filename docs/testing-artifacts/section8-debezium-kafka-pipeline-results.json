@@ -1,0 +1,102 @@
+{
+  "generatedAt": "2026-04-18T13:19:10.669Z",
+  "environment": {
+    "node": "v22.12.0",
+    "platform": "darwin",
+    "arch": "x64"
+  },
+  "summary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0
+  },
+  "tests": [
+    {
+      "id": "S8-T01",
+      "name": "CDC normalize + delete rewrite to soft_delete",
+      "passed": true,
+      "durationMs": 3.32,
+      "details": {
+        "createTraceId": "cdc-lamtek-akreditasi:mysql-bin.000001:120:1:1712570000000",
+        "softDeleteTraceId": "cdc-lamtek-akreditasi:mysql-bin.000001:160:1:1712570100000",
+        "publishDataQueryCount": 1,
+        "publishSoftDeleteCount": 1,
+        "softDeleteProjection": {
+          "isDeleted": true,
+          "deletedAt": "2026-04-18T13:19:10.606Z"
+        }
+      }
+    },
+    {
+      "id": "S8-T02",
+      "name": "Connector DataQuery filtering and smart-contract routing",
+      "passed": true,
+      "durationMs": 0.643,
+      "details": {
+        "registerCalls": 1,
+        "updateCalls": 1,
+        "ignoredTablesStillMapped": 2,
+        "mappedSoftDeleteStatus": "SELESAI"
+      }
+    },
+    {
+      "id": "S8-T03",
+      "name": "DataFile split and connector flow to IPFS then blockchain",
+      "passed": true,
+      "durationMs": 6.149,
+      "details": {
+        "queued": true,
+        "referenceId": "3e97398c-ad23-4599-8202-4ec9bee1c4ca",
+        "dataFileEventTopicExpected": "lamtek.data.file",
+        "contentBase64Length": 1398104,
+        "ipfsUploadCount": 1,
+        "blockchainUploadCount": 1,
+        "blockchainUploadPayload": {
+          "kodeAkreditasi": "AKR-FILE-001",
+          "ipfsHash": "Qm2b624c255e2f558ccfb0324761975dd7da7e4a503697",
+          "namaDokumen": "section8-1048576.bin",
+          "tipeDokumen": "LAPORAN_AK"
+        }
+      }
+    },
+    {
+      "id": "S8-T04",
+      "name": "Connector consumer entry points for DATA_QUERY and DATA_FILE",
+      "passed": true,
+      "durationMs": 0.349,
+      "details": {
+        "dataQueryConsumerCalls": 1,
+        "dataFileConsumerCalls": 1
+      }
+    },
+    {
+      "id": "S8-T05",
+      "name": "Eth signer modes with Vault path",
+      "passed": true,
+      "durationMs": 54.17,
+      "details": {
+        "externalSignerConfigMode": "external",
+        "externalSignerRpcConfigured": "http://localhost:8545",
+        "vaultSignerIsWallet": true,
+        "directSignerIsWallet": true,
+        "signerModesTested": [
+          "external",
+          "vault",
+          "direct"
+        ]
+      }
+    },
+    {
+      "id": "S8-T06",
+      "name": "Smart contract bridge methods return tx hashes",
+      "passed": true,
+      "durationMs": 0.894,
+      "details": {
+        "txRegister": "0xaaa111",
+        "txUpdate": "0xbbb222",
+        "txUpload": "0xccc333",
+        "smartContractBridgeStatus": "ok"
+      }
+    }
+  ]
+}

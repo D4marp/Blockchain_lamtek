@@ -3,13 +3,16 @@ import {
   UnauthorizedException,
   BadRequestException,
   Logger,
+  ConflictException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { User } from './entities/user.entity';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { Institusi, JenisPT } from '../master-data/entities/institusi.entity';
 
 @Injectable()
 export class AuthService {
@@ -18,13 +21,16 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Institusi)
+    private institusiRepository: Repository<Institusi>,
     private jwtService: JwtService,
   ) {}
 
-  async register(registerDto: RegisterDto): Promise<{ user: any; token: string }> {
+  async register(registerDto: RegisterDto): Promise<{ user: any; token: string; institusi?: any }> {
     try {
       this.logger.debug(`[REGISTER] Attempting registration for email: ${registerDto.email}`);
 
+      // Check if user already exists
       const existingUser = await this.userRepository.findOne({
         where: { email: registerDto.email },
       });
@@ -34,32 +40,120 @@ export class AuthService {
         throw new BadRequestException('Email sudah terdaftar');
       }
 
+      let institusiId: number | null = registerDto.tenantId || null;
+
+      // If tenant data is provided, create new institution
+      if (registerDto.tenant) {
+        this.logger.debug(`[REGISTER] Creating new institution: ${registerDto.tenant.name}`);
+        
+        const institusi = await this.createInstitusi(registerDto.tenant);
+        institusiId = institusi.id;
+        
+        this.logger.log(`[REGISTER] Institution created successfully: ${institusi.id} - ${institusi.namaInstitusi}`);
+      }
+
+      // Hash password
       const hashedPassword = await bcrypt.hash(registerDto.password, 10);
       this.logger.debug(`[REGISTER] Password hashed successfully for ${registerDto.email}`);
 
+      // Create user
       const user = this.userRepository.create({
-        ...registerDto,
+        name: registerDto.name,
+        email: registerDto.email,
         password: hashedPassword,
-        role: 'USER',
+        role: 'PRODI',
+        tenantId: institusiId,
+        isActive: true,
+        nama: registerDto.name, // Sync with 'name' field for database compatibility
       });
 
       const savedUser = await this.userRepository.save(user);
       this.logger.log(`[REGISTER] User registered successfully: ${savedUser.id} - ${savedUser.email}`);
 
+      // Generate JWT token
       const token = this.jwtService.sign({
         id: savedUser.id,
         email: savedUser.email,
-        tenantId: savedUser.tenantId,
+        institusiId: institusiId,
       });
 
-      return {
+      const response: any = {
         user: this.formatUser(savedUser),
         token,
       };
+
+      // Include institution data in response if it was created
+      if (registerDto.tenant && institusiId) {
+        const institusi = await this.institusiRepository.findOne({ where: { id: institusiId } });
+        if (institusi) {
+          response.institusi = {
+            id: institusi.id,
+            name: institusi.namaInstitusi,
+            type: institusi.jenisPt,
+            address: institusi.alamat,
+          };
+        }
+      }
+
+      return response;
     } catch (error) {
       this.logger.error(`[REGISTER] Registration failed: ${error.message}`, error.stack);
       throw error;
     }
+  }
+
+  private async createInstitusi(tenantData: any): Promise<Institusi> {
+    // Generate unique code from tenant name
+    const kode = this.generateInstitusiCode(tenantData.name);
+    
+    // Check if institution code already exists
+    const existing = await this.institusiRepository.findOne({
+      where: { kodeInstitusi: kode },
+    });
+    
+    if (existing) {
+      throw new ConflictException(`Institusi dengan kode ${kode} sudah ada`);
+    }
+
+    const institusi = this.institusiRepository.create({
+      kodeInstitusi: kode,
+      namaInstitusi: tenantData.name,
+      jenisPt: this.mapJenisPt(tenantData.type),
+      alamat: tenantData.address || null,
+      namaSingkat: this.generateShortName(tenantData.name),
+      isActive: true,
+    });
+
+    return this.institusiRepository.save(institusi);
+  }
+
+  private mapJenisPt(type: string): JenisPT {
+    const mapping: {[key: string]: JenisPT} = {
+      'PERGURUAN_TINGGI': JenisPT.PTS,
+      'PTS': JenisPT.PTS,
+      'PTN': JenisPT.PTN,
+      'PTN_BH': JenisPT.PTN_BH,
+      'POLITEKNIK': JenisPT.POLITEKNIK,
+      'AKADEMI': JenisPT.PTS,
+    };
+    return mapping[type] || JenisPT.PTS;
+  }
+
+  private generateInstitusiCode(name: string): string {
+    // Create code from institution name + random suffix
+    const base = name.substring(0, 3).toUpperCase();
+    const suffix = Date.now().toString().slice(-4);
+    return `${base}${suffix}`;
+  }
+
+  private generateShortName(name: string): string {
+    // Create short name: take first letters of each word
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 10);
   }
 
   async login(loginDto: LoginDto): Promise<{ user: any; token: string }> {

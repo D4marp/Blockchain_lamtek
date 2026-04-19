@@ -1,7 +1,13 @@
 import axios from 'axios';
 
+// Get API URL from environment variable
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+if (!apiUrl && typeof window !== 'undefined') {
+  console.warn('NEXT_PUBLIC_API_URL environment variable is not set');
+}
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1',
+  baseURL: apiUrl || 'http://backend_lamtek.paas.hcm-lab.id/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -53,7 +59,17 @@ function createCrudApi<T = any>(basePath: string) {
 export const authApi = {
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }),
-  register: (data: { name: string; email: string; password: string; tenantId?: string }) =>
+  register: (data: {
+    name: string;
+    email: string;
+    phone: string;
+    password: string;
+    tenant: {
+      name: string;
+      type: string;
+      address: string;
+    };
+  }) =>
     api.post('/auth/register', data),
   me: () => api.get('/auth/me'),
   logout: () => api.post('/auth/logout'),

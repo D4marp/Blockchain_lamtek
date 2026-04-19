@@ -203,7 +203,7 @@ export class AkreditasiService {
   async uploadDokumen(
     id: number,
     tenantId: number,
-    file: Express.Multer.File,
+    file: any,
     tipeDokumen: string
   ): Promise<{ ipfsHash: string; url: string }> {
     const akreditasi = await this.findOne(id, tenantId);

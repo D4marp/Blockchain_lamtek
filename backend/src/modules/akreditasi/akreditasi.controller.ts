@@ -55,11 +55,11 @@ export class AkreditasiController {
   @ApiQuery({ name: 'tipe', required: false, enum: TipeAkreditasi })
   @ApiQuery({ name: 'tahun', required: false, type: Number })
   async findAll(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     @Query('status') status?: StatusAkreditasi,
     @Query('tipe') tipe?: TipeAkreditasi,
-    @Query('tahun') tahun?: number,
+    @Query('tahun', new ParseIntPipe({ optional: true })) tahun?: number,
     // @CurrentTenant() tenantId: number,
   ) {
     try {
@@ -131,7 +131,7 @@ export class AkreditasiController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadDokumen(
     @Param('id', ParseIntPipe) id: number,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: any,
     @Body('tipeDokumen') tipeDokumen: string,
     // @CurrentTenant() tenantId: number,
   ) {

@@ -48,7 +48,7 @@ export class AsesmenLapanganService {
       tglVisitasiAwal: Date;
       tglVisitasiAkhir: Date;
       noSuratTugas: string;
-      suratTugasFile?: Express.Multer.File;
+      suratTugasFile?: any;
     },
   ): Promise<AsesmenLapangan> {
     const asesmen = await this.findOne(id);
@@ -69,9 +69,9 @@ export class AsesmenLapanganService {
   async submitLaporan(
     id: number,
     files: {
-      laporanAL?: Express.Multer.File;
-      beritaAcara?: Express.Multer.File;
-      umpanBalik?: Express.Multer.File;
+      laporanAL?: any;
+      beritaAcara?: any;
+      umpanBalik?: any;
     },
   ): Promise<AsesmenLapangan> {
     const asesmen = await this.findOne(id);
@@ -99,7 +99,7 @@ export class AsesmenLapanganService {
 
   async submitTanggapan(
     id: number,
-    file: Express.Multer.File,
+    file: any,
     dariUPPS: boolean,
   ): Promise<AsesmenLapangan> {
     const asesmen = await this.findOne(id);

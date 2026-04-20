@@ -28,8 +28,9 @@ DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-3306}"
 DB_USERNAME="${DB_USERNAME:-lamtek}"
 DB_PASSWORD="${DB_PASSWORD:-lamtek123}"
-DB_DATABASE="${DB_DATABASE:-db_lamtek}"
+DB_DATABASE="${DB_DATABASE:-lamtek_db}"
 PORT="${PORT:-3000}"
+SEED_ON_STARTUP="${SEED_ON_STARTUP:-true}"
 
 echo "============================================"
 echo "🚀 LAM Teknik API Startup"
@@ -51,6 +52,12 @@ while [ $RETRY -lt 30 ]; do
   sleep 2
 done
 
+if [ $RETRY -eq 30 ]; then
+  echo ""
+  print_warning "Database did not become ready in time"
+  exit 1
+fi
+
 echo ""
 
 # Run migrations
@@ -60,8 +67,12 @@ npm run migration:run 2>&1
 echo ""
 
 # Run seeds
-print_status "Seeding database..."
-npm run seed 2>&1 || print_warning "Seeds skipped"
+if [ "$SEED_ON_STARTUP" = "true" ]; then
+  print_status "Seeding database..."
+  npm run seed 2>&1 || print_warning "Seeds skipped"
+else
+  print_status "Seeding disabled (SEED_ON_STARTUP=$SEED_ON_STARTUP)"
+fi
 
 echo ""
 print_success "Ready to start API"

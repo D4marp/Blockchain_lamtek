@@ -3,6 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Install dependencies
 COPY package*.json ./
 RUN npm ci
@@ -16,8 +19,7 @@ COPY .eslintrc.json ./
 COPY public ./public
 COPY src ./src
 
-# Copy environment files for build
-COPY .env.local ./
+# Copy environment template for reference (build uses ARG/ENV for NEXT_PUBLIC_* values)
 COPY .env.example ./
 
 # Build the Next.js app
@@ -40,9 +42,6 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/next.config.js ./next.config.js
-
-# Copy environment file for runtime
-COPY .env.local ./
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001

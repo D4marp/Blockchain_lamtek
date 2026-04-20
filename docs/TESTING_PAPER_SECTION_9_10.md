@@ -1,4 +1,4 @@
-# Data Testing Paper - Section 8, 9 and 10
+# Data Testing Paper - Section 8, 9, 10, and 11
 
 Tanggal generate data: 2026-04-18T11:45:27.032Z
 
@@ -290,6 +290,139 @@ Sample hasil parse:
 - backend/src/modules/kafka/kafka.service.ts:338
 - backend/src/modules/kafka/kafka.service.ts:348
 
+## 11. Smart Contract Implementation
+
+### 11.1 Contract Scope and Design
+A smart contract system written in Solidity is deployed on Hyperledger Besu to govern institutional accreditation data and document traceability. Berbeda dari pendekatan yang memetakan variabel ke identitas personal, implementasi ini memetakan data akreditasi level institusi/program studi. Arsitektur kontrak dipisah agar domain bisnis modular:
+1. `AkreditasiRegistry` untuk status lifecycle akreditasi, tenant registration, dan audit log status.
+2. `DokumenIPFSRegistry` untuk metadata dokumen berbasis CID IPFS, verifikasi, dan soft deactivation.
+3. `AsesmenKecukupanContract` untuk proses AK (laporan, skor, rincian penilaian).
+4. `AsesmenLapanganContract` untuk proses AL (jadwal visitasi, laporan AL, tanggapan, rekomendasi).
+
+Pada model konseptual paper, operasi `setDocument()` digunakan sebagai abstraksi penulisan metadata dokumen ke blockchain. Pada implementasi codebase, abstraksi ini dipetakan ke fungsi konkret `uploadDokumen()` (dokumen baru), `verifyDokumen()` (validasi), `deactivateDokumen()` (soft delete), serta `updateStatus()` untuk transisi status akreditasi.
+
+### 11.2 Essential Variables for Document Traceability
+Variabel inti yang digunakan untuk jejak akreditasi adalah:
+- `universityCode`: direpresentasikan oleh `institusiId` dan konteks `kodeAkreditasi`.
+- `prodiCode`: direpresentasikan oleh `prodiId` pada registry akreditasi.
+- `cid`: direpresentasikan oleh `ipfsHash` (Content Identifier dari IPFS).
+- `timestamp`: direpresentasikan oleh `block.timestamp` dan field waktu (`uploadedAt`, `createdAt`, `updatedAt`).
+- `action`: direpresentasikan oleh tipe operasi (`upload`, `update`, `soft_delete`) dan tipe event on-chain.
+- `sender`: direpresentasikan oleh `msg.sender` (`uploadedBy`, `changedBy`, `verifiedBy`).
+
+### 11.3 Algorithm 1. Smart Contract for Accreditation Document Management
+
+Data:
+- `universityCode: string` (model paper) / `institusiId: uint256` (implementasi)
+- `prodiCode: string` (model paper) / `prodiId: uint256` (implementasi)
+- `cid: string` (`ipfsHash` pada implementasi)
+- `sender: address`
+- `action: string`
+- `timestamp: uint`
+
+Result:
+- Recorded accreditation metadata on blockchain
+
+Event abstraction (paper-level):
+```solidity
+event DataAccreditation(
+	string universityCode,
+	string prodiCode,
+	string cid,
+	address sender,
+	string action,
+	uint timestamp
+);
+```
+
+Event implementation (on-chain):
+- `AkreditasiRegistered(...)`
+- `StatusChanged(...)`
+- `DokumenUploaded(...)`
+- `DokumenVerified(...)`
+- `DokumenDeactivated(...)`
+
+### 11.4 Formal Model of CDC, IPFS Sync, and Blockchain Recording
+Interaksi antara smart contract, IPFS, dan mekanisme CDC dapat dimodelkan sebagai berikut:
+
+$$
+f(C_{new}) = \text{detect\_changes}(D) (6)
+$$
+
+$$
+g(D, C_{new}) = \text{sync\_to\_ipfs}(D, C_{new}) (7)
+$$
+
+$$
+T_{sync} = T_{upload\_ipfs} + T_{processing} (8)
+$$
+
+$$
+T(D, C_{new}) = \text{record\_transaction}(D, C_{new}) (9)
+$$
+
+$$
+T_{transaction} = T_{hashing} + T_{recording} (10)
+$$
+
+Keterangan:
+1. Persamaan (6) mendefinisikan deteksi perubahan dari database melalui CDC (insert, update, delete).
+2. Persamaan (7) mendefinisikan sinkronisasi dokumen ke IPFS untuk menghasilkan CID unik.
+3. Persamaan (8) memecah waktu sinkronisasi menjadi waktu upload dan waktu pemrosesan tambahan.
+4. Persamaan (9) memodelkan proses pencatatan metadata hasil perubahan ke blockchain sebagai transaksi.
+5. Persamaan (10) memecah total waktu transaksi menjadi hashing time dan ledger recording time.
+
+### 11.5 Peta Bukti Codebase (Path:Line)
+1. Registry akreditasi, status workflow, dan audit log:
+- blockchain/contracts/AkreditasiRegistry.sol:48
+- blockchain/contracts/AkreditasiRegistry.sol:67
+- blockchain/contracts/AkreditasiRegistry.sol:118
+- blockchain/contracts/AkreditasiRegistry.sol:222
+- blockchain/contracts/AkreditasiRegistry.sol:281
+- blockchain/contracts/AkreditasiRegistry.sol:345
+- blockchain/contracts/AkreditasiRegistry.sol:460
+
+2. Registry dokumen IPFS (CID, verifikasi, soft delete):
+- blockchain/contracts/DokumenIPFSRegistry.sol:26
+- blockchain/contracts/DokumenIPFSRegistry.sol:59
+- blockchain/contracts/DokumenIPFSRegistry.sol:110
+- blockchain/contracts/DokumenIPFSRegistry.sol:160
+- blockchain/contracts/DokumenIPFSRegistry.sol:189
+- blockchain/contracts/DokumenIPFSRegistry.sol:234
+
+3. Kontrak proses asesmen kecukupan (AK):
+- blockchain/contracts/AsesmenKecukupanContract.sol:10
+- blockchain/contracts/AsesmenKecukupanContract.sol:44
+- blockchain/contracts/AsesmenKecukupanContract.sol:92
+- blockchain/contracts/AsesmenKecukupanContract.sol:131
+- blockchain/contracts/AsesmenKecukupanContract.sol:148
+
+4. Kontrak proses asesmen lapangan (AL):
+- blockchain/contracts/AsesmenLapanganContract.sol:10
+- blockchain/contracts/AsesmenLapanganContract.sol:61
+- blockchain/contracts/AsesmenLapanganContract.sol:122
+- blockchain/contracts/AsesmenLapanganContract.sol:166
+- blockchain/contracts/AsesmenLapanganContract.sol:214
+- blockchain/contracts/AsesmenLapanganContract.sol:259
+
+5. Integrasi runtime CDC -> connector -> blockchain:
+- backend/src/modules/kafka/kafka.controller.ts:284
+- backend/src/modules/kafka/kafka.controller.ts:297
+- backend/src/modules/kafka/kafka.controller.ts:300
+- backend/src/modules/kafka/kafka.controller.ts:308
+- backend/src/modules/kafka/connector.service.ts:5
+- backend/src/modules/kafka/connector.service.ts:61
+- backend/src/modules/kafka/connector.service.ts:74
+- backend/src/modules/kafka/connector.service.ts:93
+- backend/src/modules/kafka/connector.service.ts:107
+- backend/src/modules/kafka/connector.service.ts:135
+
+6. Adapter backend ke method smart contract:
+- backend/src/modules/blockchain/blockchain.service.ts:7
+- backend/src/modules/blockchain/blockchain.service.ts:155
+- backend/src/modules/blockchain/blockchain.service.ts:198
+- backend/src/modules/blockchain/blockchain.service.ts:246
+
 ## Referensi Implementasi Codebase
 - backend/src/main.ts
 - backend/src/modules/dokumen/dokumen.controller.ts
@@ -299,6 +432,10 @@ Sample hasil parse:
 - backend/src/modules/kafka/connector.service.ts
 - backend/src/modules/blockchain/blockchain.service.ts
 - backend/src/modules/blockchain/vault.service.ts
+- blockchain/contracts/AkreditasiRegistry.sol
+- blockchain/contracts/DokumenIPFSRegistry.sol
+- blockchain/contracts/AsesmenKecukupanContract.sol
+- blockchain/contracts/AsesmenLapanganContract.sol
 - backend/scripts/setup-debezium-connector.sh
 - backend/scripts/section8-debezium-kafka-pipeline-test.ts
 - docs/testing-artifacts/section8-debezium-kafka-pipeline-results.json

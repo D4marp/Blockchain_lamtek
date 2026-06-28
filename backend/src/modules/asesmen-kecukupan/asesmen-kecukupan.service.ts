@@ -22,7 +22,17 @@ export class AsesmenKecukupanService {
     targetWaktuAK: Date;
   }): Promise<AsesmenKecukupan> {
     const asesmen = this.asesmenRepository.create(data);
-    return this.asesmenRepository.save(asesmen);
+    const saved = await this.asesmenRepository.save(asesmen);
+
+    // Anchor on-chain (best-effort; BlockchainService swallows failures).
+    await this.blockchainService.createAsesmenKecukupanOnChain({
+      kodeAkreditasi: data.kodeAkreditasi,
+      akreditasiId: data.akreditasiId,
+      keaId: data.keaId,
+      targetWaktu: data.targetWaktuAK,
+    });
+
+    return saved;
   }
 
   async findOne(id: number): Promise<AsesmenKecukupan> {
@@ -56,7 +66,15 @@ export class AsesmenKecukupanService {
     asesmen.ipfsHashLaporanAK = ipfsHash;
     asesmen.deskripsiLapAK = deskripsi;
 
-    return this.asesmenRepository.save(asesmen);
+    const saved = await this.asesmenRepository.save(asesmen);
+
+    await this.blockchainService.submitLaporanAKOnChain({
+      kodeAkreditasi: asesmen.kodeAkreditasi,
+      ipfsHashLaporan: ipfsHash,
+      deskripsi,
+    });
+
+    return saved;
   }
 
   async tetapkanHasil(
@@ -75,7 +93,16 @@ export class AsesmenKecukupanService {
     asesmen.hasilDitetapkanKEA = true;
     asesmen.terkonsolidasi = true;
 
-    return this.asesmenRepository.save(asesmen);
+    const saved = await this.asesmenRepository.save(asesmen);
+
+    await this.blockchainService.tetapkanHasilAKOnChain({
+      kodeAkreditasi: asesmen.kodeAkreditasi,
+      konsisten: data.konsisten,
+      skor: data.skorAkhir,
+      notePenetapan: data.notePenetapan,
+    });
+
+    return saved;
   }
 
   async findAll(options: { page?: number; limit?: number }): Promise<{

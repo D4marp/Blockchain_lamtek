@@ -16,6 +16,27 @@ export class RegistrasiAkreditasiController {
     return this.registrasiService.create(createDto);
   }
 
+  @Get('nomor/:nomorRegistrasi')
+  @ApiOperation({ summary: 'Ambil registrasi berdasarkan nomor registrasi' })
+  @ApiResponse({ status: 200, description: 'Data registrasi akreditasi', type: RegistrasiAkreditasi })
+  findByNomorRegistrasi(@Param('nomorRegistrasi') nomorRegistrasi: string): Promise<RegistrasiAkreditasi> {
+    return this.registrasiService.findByNomorRegistrasi(nomorRegistrasi);
+  }
+
+  @Get('prodi/:prodiId')
+  @ApiOperation({ summary: 'Ambil registrasi berdasarkan prodi' })
+  @ApiResponse({ status: 200, description: 'Data registrasi akreditasi', type: [RegistrasiAkreditasi] })
+  findByProdi(@Param('prodiId', ParseIntPipe) prodiId: number): Promise<RegistrasiAkreditasi[]> {
+    return this.registrasiService.findByProdi(prodiId);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Ambil registrasi akreditasi berdasarkan ID' })
+  @ApiResponse({ status: 200, description: 'Data registrasi akreditasi', type: RegistrasiAkreditasi })
+  findOne(@Param('id', ParseIntPipe) id: number): Promise<RegistrasiAkreditasi> {
+    return this.registrasiService.findOne(id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Ambil semua registrasi akreditasi' })
   @ApiQuery({ name: 'prodiId', required: false, type: Number })
@@ -30,27 +51,6 @@ export class RegistrasiAkreditasiController {
     @Query('tahunAkademik') tahunAkademik?: string,
   ): Promise<RegistrasiAkreditasi[]> {
     return this.registrasiService.findAll({ prodiId, institusiId, status, tahunAkademik });
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Ambil registrasi akreditasi berdasarkan ID' })
-  @ApiResponse({ status: 200, description: 'Data registrasi akreditasi', type: RegistrasiAkreditasi })
-  findOne(@Param('id', ParseIntPipe) id: number): Promise<RegistrasiAkreditasi> {
-    return this.registrasiService.findOne(id);
-  }
-
-  @Get('nomor/:nomorRegistrasi')
-  @ApiOperation({ summary: 'Ambil registrasi berdasarkan nomor registrasi' })
-  @ApiResponse({ status: 200, description: 'Data registrasi akreditasi', type: RegistrasiAkreditasi })
-  findByNomorRegistrasi(@Param('nomorRegistrasi') nomorRegistrasi: string): Promise<RegistrasiAkreditasi> {
-    return this.registrasiService.findByNomorRegistrasi(nomorRegistrasi);
-  }
-
-  @Get('prodi/:prodiId')
-  @ApiOperation({ summary: 'Ambil registrasi berdasarkan prodi' })
-  @ApiResponse({ status: 200, description: 'Daftar registrasi akreditasi', type: [RegistrasiAkreditasi] })
-  findByProdi(@Param('prodiId', ParseIntPipe) prodiId: number): Promise<RegistrasiAkreditasi[]> {
-    return this.registrasiService.findByProdi(prodiId);
   }
 
   @Patch(':id')

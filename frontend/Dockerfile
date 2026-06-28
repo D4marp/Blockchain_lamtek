@@ -3,8 +3,16 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# NEXT_PUBLIC_* values are inlined at BUILD time, so they must be passed as
+# build args (not runtime env). Rebuild the image whenever these change.
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+ARG NEXT_PUBLIC_IPFS_GATEWAY
+ENV NEXT_PUBLIC_IPFS_GATEWAY=$NEXT_PUBLIC_IPFS_GATEWAY
+
+ARG NEXT_PUBLIC_FRONTEND_URL
+ENV NEXT_PUBLIC_FRONTEND_URL=$NEXT_PUBLIC_FRONTEND_URL
 
 # Install dependencies
 COPY package*.json ./

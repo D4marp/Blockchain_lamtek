@@ -72,9 +72,9 @@ export default function SKPage() {
 
   const filteredData = data.filter((item) => {
     const matchSearch =
-      item.prodi.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.institusi.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.noSk.toLowerCase().includes(searchQuery.toLowerCase());
+      item.prodi?.toLowerCase().includes(searchQuery?.toLowerCase()) ||
+      item.institusi?.toLowerCase().includes(searchQuery?.toLowerCase()) ||
+      item.noSk?.toLowerCase().includes(searchQuery?.toLowerCase());
     const matchStatus = !filterStatus || item.status === filterStatus;
     return matchSearch && matchStatus;
   });

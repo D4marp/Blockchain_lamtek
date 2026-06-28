@@ -7,7 +7,7 @@ if (!apiUrl && typeof window !== 'undefined') {
 }
 
 const api = axios.create({
-  baseURL: apiUrl || 'http://backend_lamtek.paas.hcm-lab.id/api/v1',
+  baseURL: apiUrl || 'http://localhost:3001/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -278,9 +278,12 @@ export const akreditasiApi = {
     api.get('/akreditasi', { params }),
   getById: (id: string) => api.get(`/akreditasi/${id}`),
   create: (data: any) => api.post('/akreditasi', data),
+  // Backend route is PUT (@Put(':id/status')), not PATCH.
   updateStatus: (id: string, data: { status: string; catatan?: string }) =>
-    api.patch(`/akreditasi/${id}/status`, data),
-  getTimeline: (id: string) => api.get(`/akreditasi/${id}/timeline`),
+    api.put(`/akreditasi/${id}/status`, data),
+  // No dedicated /timeline route; per-akreditasi on-chain history is returned by
+  // GET /akreditasi/:id/blockchain (includes audit logs from the contract).
+  getTimeline: (id: string) => api.get(`/akreditasi/${id}/blockchain`),
   getBlockchainData: (id: string) => api.get(`/akreditasi/${id}/blockchain`),
   getStats: () => api.get('/akreditasi/stats'),
 };
@@ -290,10 +293,11 @@ export const asesmenKecukupanApi = {
   getByAkreditasiId: (akreditasiId: string) =>
     api.get(`/asesmen-kecukupan/akreditasi/${akreditasiId}`),
   create: (data: any) => api.post('/asesmen-kecukupan', data),
+  // Backend: POST :id/laporan to submit the report, PUT :id/hasil to finalize result.
   submit: (id: string, data: any) =>
-    api.patch(`/asesmen-kecukupan/${id}/submit`, data),
+    api.post(`/asesmen-kecukupan/${id}/laporan`, data),
   finalize: (id: string, data: { rekomendasi: string }) =>
-    api.patch(`/asesmen-kecukupan/${id}/finalize`, data),
+    api.put(`/asesmen-kecukupan/${id}/hasil`, data),
 };
 
 // Asesmen Lapangan API
@@ -301,47 +305,68 @@ export const asesmenLapanganApi = {
   getByAkreditasiId: (akreditasiId: string) =>
     api.get(`/asesmen-lapangan/akreditasi/${akreditasiId}`),
   create: (data: any) => api.post('/asesmen-lapangan', data),
+  // Backend: PUT :id/jadwal (schedule), POST :id/laporan (submit), PUT :id/hasil (finalize).
   scheduleVisit: (id: string, data: { tanggalMulai: string; tanggalSelesai: string }) =>
-    api.patch(`/asesmen-lapangan/${id}/schedule`, data),
+    api.put(`/asesmen-lapangan/${id}/jadwal`, data),
   submit: (id: string, data: any) =>
-    api.patch(`/asesmen-lapangan/${id}/submit`, data),
+    api.post(`/asesmen-lapangan/${id}/laporan`, data),
   finalize: (id: string, data: { peringkatRekomendasi: string }) =>
-    api.patch(`/asesmen-lapangan/${id}/finalize`, data),
+    api.put(`/asesmen-lapangan/${id}/hasil`, data),
 };
 
 // Dokumen API
+// Backend routes: GET /dokumen, GET /dokumen/akreditasi/:kode, GET /dokumen/ipfs/:hash,
+//                 POST /dokumen/upload/:kode, POST /dokumen/verify/:hash
+export const ipfsApi = {
+  getInfo: () => api.get('/ipfs/info'),
+  getPinned: () => api.get('/ipfs/pinned'),
+};
+
 export const dokumenApi = {
   getAll: (params?: { akreditasiId?: string; kategori?: string }) =>
     api.get('/dokumen', { params }),
-  upload: (formData: FormData) =>
-    api.post('/dokumen/upload', formData, {
+  getByAkreditasi: (kodeAkreditasi: string) =>
+    api.get(`/dokumen/akreditasi/${kodeAkreditasi}`),
+  // Upload is scoped to an akreditasi code on the backend.
+  upload: (kodeAkreditasi: string, formData: FormData) =>
+    api.post(`/dokumen/upload/${kodeAkreditasi}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  verify: (id: string) => api.patch(`/dokumen/${id}/verify`),
+  // Verification is keyed by the IPFS hash via POST.
+  verify: (ipfsHash: string) => api.post(`/dokumen/verify/${ipfsHash}`),
   download: (ipfsHash: string) =>
-    api.get(`/ipfs/${ipfsHash}`, { responseType: 'blob' }),
+    api.get(`/ipfs/file/${ipfsHash}`, { responseType: 'blob' }),
 };
 
 // Tenant API
+// Backend controller prefix is '/tenant' (singular). Available routes:
+//   POST /tenant, GET /tenant, GET /tenant/:id, POST /tenant/:id/deactivate
 export const tenantApi = {
-  getAll: () => api.get('/tenants'),
-  getById: (id: string) => api.get(`/tenants/${id}`),
-  create: (data: any) => api.post('/tenants', data),
-  update: (id: string, data: any) => api.patch(`/tenants/${id}`, data),
-  getStats: (id: string) => api.get(`/tenants/${id}/stats`),
+  getAll: () => api.get('/tenant'),
+  getById: (id: string) => api.get(`/tenant/${id}`),
+  create: (data: any) => api.post('/tenant', data),
+  deactivate: (id: string) => api.post(`/tenant/${id}/deactivate`),
+  // NOTE: backend has no generic update endpoint yet; kept for forward-compat.
+  update: (id: string, data: any) => api.put(`/tenant/${id}`, data),
 };
 
 // Blockchain API
+// Backend '/blockchain' controller exposes ONLY: GET info, GET stats, GET audit/all.
 export const blockchainApi = {
-  getTransactions: (akreditasiId: string) =>
-    api.get(`/blockchain/transactions/${akreditasiId}`),
-  verifyDocument: (ipfsHash: string) =>
-    api.get(`/blockchain/verify/${ipfsHash}`),
-  getAuditLog: (akreditasiId: string) =>
-    api.get(`/blockchain/audit/${akreditasiId}`),
+  getInfo: () => api.get('/blockchain/info'),
+  getStats: () => api.get('/blockchain/stats'),
+  // Real recent transactions scanned from the node.
+  getRecentTransactions: (limit = 25) => api.get('/blockchain/transactions', { params: { limit } }),
+  // Real deployed contract addresses + real network statistics.
+  getContracts: () => api.get('/blockchain/contracts'),
+  getNetworkStats: () => api.get('/blockchain/network-stats'),
+  // Pass 'all' for the global audit log (the only audit route the backend exposes).
+  getAuditLog: (_akreditasiId: string = 'all') => api.get('/blockchain/audit/all'),
+  // Per-akreditasi on-chain transactions/verification live under /akreditasi/:id/blockchain.
+  getTransactions: (akreditasiId: string) => api.get(`/akreditasi/${akreditasiId}/blockchain`),
 };
 
-// Dashboard API
+// Dashboard API — backed by the NestJS DashboardModule (GET /dashboard/*).
 export const dashboardApi = {
   getStats: () => api.get('/dashboard/stats'),
   getRecentActivities: () => api.get('/dashboard/activities'),

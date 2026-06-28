@@ -97,8 +97,8 @@ export default function StatusInstitusiPage() {
   };
 
   const filteredData = dummyStatusInstitusi.filter((item) =>
-    item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.kode.toLowerCase().includes(searchQuery.toLowerCase())
+    item.nama?.toLowerCase().includes(searchQuery?.toLowerCase()) ||
+    item.kode?.toLowerCase().includes(searchQuery?.toLowerCase())
   );
 
   const columns = [

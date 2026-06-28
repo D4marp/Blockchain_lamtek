@@ -9,6 +9,34 @@ import { RegistrasiProdiBaru, StatusRegistrasiProdiBaru, JenisProdi } from '../e
 export class RegistrasiProdiBaruController {
   constructor(private readonly service: RegistrasiProdiBaruService) {}
 
+  @Post()
+  @ApiOperation({ summary: 'Create registrasi prodi baru' })
+  @ApiResponse({ status: 201, description: 'Registrasi created', type: RegistrasiProdiBaru })
+  async create(@Body() dto: CreateRegistrasiProdiBaruDto): Promise<RegistrasiProdiBaru> {
+    return this.service.create(dto);
+  }
+
+  @Get('pending')
+  @ApiOperation({ summary: 'Get pending registrations' })
+  @ApiResponse({ status: 200, description: 'List pending registrations', type: [RegistrasiProdiBaru] })
+  async findPending(): Promise<RegistrasiProdiBaru[]> {
+    return this.service.findPending();
+  }
+
+  @Get('institusi/:institusiId')
+  @ApiOperation({ summary: 'Get registrasi by institusi ID' })
+  @ApiResponse({ status: 200, description: 'List registrasi', type: [RegistrasiProdiBaru] })
+  async findByInstitusi(@Param('institusiId') institusiId: number): Promise<RegistrasiProdiBaru[]> {
+    return this.service.findByInstitusi(institusiId);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get registrasi by ID' })
+  @ApiResponse({ status: 200, description: 'Registrasi found', type: RegistrasiProdiBaru })
+  async findOne(@Param('id') id: number): Promise<RegistrasiProdiBaru> {
+    return this.service.findOne(id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all registrasi prodi baru' })
   @ApiQuery({ name: 'institusiId', required: false, type: Number })
@@ -23,34 +51,6 @@ export class RegistrasiProdiBaruController {
     @Query('status') status?: StatusRegistrasiProdiBaru,
   ): Promise<RegistrasiProdiBaru[]> {
     return this.service.findAll({ institusiId, jenjangId, jenisProdi, status });
-  }
-
-  @Get('pending')
-  @ApiOperation({ summary: 'Get pending registrations' })
-  @ApiResponse({ status: 200, description: 'List pending registrations', type: [RegistrasiProdiBaru] })
-  async findPending(): Promise<RegistrasiProdiBaru[]> {
-    return this.service.findPending();
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get registrasi by ID' })
-  @ApiResponse({ status: 200, description: 'Registrasi found', type: RegistrasiProdiBaru })
-  async findOne(@Param('id') id: number): Promise<RegistrasiProdiBaru> {
-    return this.service.findOne(id);
-  }
-
-  @Get('institusi/:institusiId')
-  @ApiOperation({ summary: 'Get registrasi by institusi ID' })
-  @ApiResponse({ status: 200, description: 'List registrasi', type: [RegistrasiProdiBaru] })
-  async findByInstitusi(@Param('institusiId') institusiId: number): Promise<RegistrasiProdiBaru[]> {
-    return this.service.findByInstitusi(institusiId);
-  }
-
-  @Post()
-  @ApiOperation({ summary: 'Create registrasi prodi baru' })
-  @ApiResponse({ status: 201, description: 'Registrasi created', type: RegistrasiProdiBaru })
-  async create(@Body() dto: CreateRegistrasiProdiBaruDto): Promise<RegistrasiProdiBaru> {
-    return this.service.create(dto);
   }
 
   @Put(':id')

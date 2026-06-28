@@ -9,6 +9,35 @@ import { UmpanBalik, JenisFeedback } from '../entities/umpan-balik.entity';
 export class UmpanBalikController {
   constructor(private readonly service: UmpanBalikService) {}
 
+  @Post()
+  @ApiOperation({ summary: 'Create umpan balik' })
+  @ApiResponse({ status: 201, description: 'Umpan balik created', type: UmpanBalik })
+  async create(@Body() dto: CreateUmpanBalikDto): Promise<UmpanBalik> {
+    return this.service.create(dto);
+  }
+
+  @Get('rating/:untukUserId')
+  @ApiOperation({ summary: 'Get average rating for user' })
+  @ApiResponse({ status: 200, description: 'Average rating', type: Number })
+  async getAverageRating(@Param('untukUserId') untukUserId: number): Promise<{ averageRating: number }> {
+    const rating = await this.service.getAverageRating(untukUserId);
+    return { averageRating: rating };
+  }
+
+  @Get('akreditasi/:akreditasiId')
+  @ApiOperation({ summary: 'Get umpan balik by akreditasi ID' })
+  @ApiResponse({ status: 200, description: 'List umpan balik', type: [UmpanBalik] })
+  async findByAkreditasi(@Param('akreditasiId') akreditasiId: number): Promise<UmpanBalik[]> {
+    return this.service.findByAkreditasi(akreditasiId);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get umpan balik by ID' })
+  @ApiResponse({ status: 200, description: 'Umpan balik found', type: UmpanBalik })
+  async findOne(@Param('id') id: number): Promise<UmpanBalik> {
+    return this.service.findOne(id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all umpan balik' })
   @ApiQuery({ name: 'akreditasiId', required: false, type: Number })
@@ -23,35 +52,6 @@ export class UmpanBalikController {
     @Query('jenisFeedback') jenisFeedback?: JenisFeedback,
   ): Promise<UmpanBalik[]> {
     return this.service.findAll({ akreditasiId, dariUserId, untukUserId, jenisFeedback });
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get umpan balik by ID' })
-  @ApiResponse({ status: 200, description: 'Umpan balik found', type: UmpanBalik })
-  async findOne(@Param('id') id: number): Promise<UmpanBalik> {
-    return this.service.findOne(id);
-  }
-
-  @Get('akreditasi/:akreditasiId')
-  @ApiOperation({ summary: 'Get umpan balik by akreditasi ID' })
-  @ApiResponse({ status: 200, description: 'List umpan balik', type: [UmpanBalik] })
-  async findByAkreditasi(@Param('akreditasiId') akreditasiId: number): Promise<UmpanBalik[]> {
-    return this.service.findByAkreditasi(akreditasiId);
-  }
-
-  @Get('rating/:untukUserId')
-  @ApiOperation({ summary: 'Get average rating for user' })
-  @ApiResponse({ status: 200, description: 'Average rating', type: Number })
-  async getAverageRating(@Param('untukUserId') untukUserId: number): Promise<{ averageRating: number }> {
-    const rating = await this.service.getAverageRating(untukUserId);
-    return { averageRating: rating };
-  }
-
-  @Post()
-  @ApiOperation({ summary: 'Create umpan balik' })
-  @ApiResponse({ status: 201, description: 'Umpan balik created', type: UmpanBalik })
-  async create(@Body() dto: CreateUmpanBalikDto): Promise<UmpanBalik> {
-    return this.service.create(dto);
   }
 
   @Put(':id')

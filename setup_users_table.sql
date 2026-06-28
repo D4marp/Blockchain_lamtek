@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `name` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `role` enum('ADMIN', 'VALIDATOR', 'INSTITUTION', 'USER') NOT NULL DEFAULT 'USER',
+  `role` enum('ADMIN', 'SEKRETARIAT', 'KOMITE_EVALUASI', 'MAJELIS_AKREDITASI', 'ASESOR', 'PRODI', 'UPPS', 'VALIDATOR', 'INSTITUTION', 'USER') NOT NULL DEFAULT 'PRODI',
   `tenantId` bigint(20) UNSIGNED NULL,
   `noIdentitas` varchar(100) NULL,
   `noSertifikatEdukatif` varchar(100) NULL,

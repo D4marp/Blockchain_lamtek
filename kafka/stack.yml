@@ -1,0 +1,27 @@
+# REPO: kafka — single-node KRaft (tanpa Zookeeper).
+# Deploy: set -a; . .env.paas; set +a; docker stack deploy -c stack.yml kafka
+version: "3.8"
+
+services:
+  kafka:
+    image: ${KAFKA_IMAGE:-REGISTRY/lamtek-kafka}
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: ${KAFKA_ADVERTISED_LISTENERS:-PLAINTEXT://kafka:9092}
+      KAFKA_NODE_ID: ${KAFKA_NODE_ID:-1}
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: ${KAFKA_AUTO_CREATE_TOPICS_ENABLE:-true}
+      KAFKA_LOG_RETENTION_HOURS: ${KAFKA_LOG_RETENTION_HOURS:-168}
+      CLUSTER_ID: ${CLUSTER_ID:-4L6g3nShT-eMCtK--X86sw}
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - lamtek-net
+    deploy:
+      replicas: 1
+      restart_policy: { condition: any }
+
+networks:
+  lamtek-net:
+    external: true
+
+volumes:
+  kafka_data:

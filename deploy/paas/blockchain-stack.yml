@@ -1,0 +1,24 @@
+# SERVICE 1 — Blockchain (Hardhat 1 node). Deploy: docker stack deploy -c ... blockchain
+# NOTE: `docker stack deploy` ignores `build:` — push REGISTRY/lamtek-blockchain first.
+version: "3.8"
+
+services:
+  blockchain:
+    image: ${BLOCKCHAIN_IMAGE:-REGISTRY/lamtek-blockchain}
+    environment:
+      RPC_HOST: ${RPC_HOST:-0.0.0.0}
+      RPC_PORT: ${RPC_PORT:-8545}
+      DEPLOY_ON_START: ${DEPLOY_ON_START:-true}
+      RUN_SEED: ${RUN_SEED:-false}
+    ports:
+      - "8545:8545"   # JSON-RPC (expose only if accessed from outside the overlay)
+    networks:
+      - lamtek-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+
+networks:
+  lamtek-net:
+    external: true

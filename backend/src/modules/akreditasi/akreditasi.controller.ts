@@ -47,30 +47,6 @@ export class AkreditasiController {
     return this.akreditasiService.create(createDto, tenantId);
   }
 
-  @Get()
-  @ApiOperation({ summary: 'Get semua akreditasi' })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'status', required: false, enum: StatusAkreditasi })
-  @ApiQuery({ name: 'tipe', required: false, enum: TipeAkreditasi })
-  @ApiQuery({ name: 'tahun', required: false, type: Number })
-  async findAll(
-    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
-    @Query('status') status?: StatusAkreditasi,
-    @Query('tipe') tipe?: TipeAkreditasi,
-    @Query('tahun', new ParseIntPipe({ optional: true })) tahun?: number,
-    // @CurrentTenant() tenantId: number,
-  ) {
-    try {
-      const tenantId = 1; // TODO: Get from auth
-      return await this.akreditasiService.findAll(tenantId, { page, limit, status, tipe, tahun });
-    } catch (error) {
-      console.error('Error in GET /akreditasi:', error);
-      return { data: [], total: 0, page: page || 1, limit: limit || 10 };
-    }
-  }
-
   @Get('stats')
   @ApiOperation({ summary: 'Get dashboard statistics' })
   async getStats(
@@ -90,6 +66,12 @@ export class AkreditasiController {
     }
   }
 
+  @Get('kode/:kodeAkreditasi')
+  @ApiOperation({ summary: 'Get akreditasi by kode' })
+  async findByKode(@Param('kodeAkreditasi') kodeAkreditasi: string) {
+    return this.akreditasiService.findByKode(kodeAkreditasi);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get akreditasi by ID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'Detail akreditasi' })
@@ -107,10 +89,33 @@ export class AkreditasiController {
     }
   }
 
-  @Get('kode/:kodeAkreditasi')
-  @ApiOperation({ summary: 'Get akreditasi by kode' })
-  async findByKode(@Param('kodeAkreditasi') kodeAkreditasi: string) {
-    return this.akreditasiService.findByKode(kodeAkreditasi);
+  @Get()
+  @ApiOperation({ summary: 'Get semua akreditasi' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'status', required: false, enum: StatusAkreditasi })
+  @ApiQuery({ name: 'tipe', required: false, enum: TipeAkreditasi })
+  @ApiQuery({ name: 'tahun', required: false, type: Number })
+  async findAll(
+    // Parse numeric query params manually: ParseIntPipe({ optional: true }) in this
+    // Nest version still throws on an absent value, breaking the unfiltered list.
+    @Query('page') pageRaw?: string,
+    @Query('limit') limitRaw?: string,
+    @Query('status') status?: StatusAkreditasi,
+    @Query('tipe') tipe?: TipeAkreditasi,
+    @Query('tahun') tahunRaw?: string,
+    // @CurrentTenant() tenantId: number,
+  ) {
+    const page = pageRaw !== undefined && pageRaw !== '' ? Number(pageRaw) : undefined;
+    const limit = limitRaw !== undefined && limitRaw !== '' ? Number(limitRaw) : undefined;
+    const tahun = tahunRaw !== undefined && tahunRaw !== '' ? Number(tahunRaw) : undefined;
+    try {
+      const tenantId = 1; // TODO: Get from auth
+      return await this.akreditasiService.findAll(tenantId, { page, limit, status, tipe, tahun });
+    } catch (error) {
+      console.error('Error in GET /akreditasi:', error);
+      return { data: [], total: 0, page: page || 1, limit: limit || 10 };
+    }
   }
 
   @Put(':id/status')

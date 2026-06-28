@@ -9,18 +9,11 @@ import { SkAkreditasi, StatusSk } from '../entities/sk-akreditasi.entity';
 export class SkAkreditasiController {
   constructor(private readonly service: SkAkreditasiService) {}
 
-  @Get()
-  @ApiOperation({ summary: 'Get all SK akreditasi' })
-  @ApiQuery({ name: 'akreditasiId', required: false, type: Number })
-  @ApiQuery({ name: 'status', required: false, enum: StatusSk })
-  @ApiQuery({ name: 'peringkat', required: false, type: String })
-  @ApiResponse({ status: 200, description: 'List SK akreditasi', type: [SkAkreditasi] })
-  async findAll(
-    @Query('akreditasiId') akreditasiId?: number,
-    @Query('status') status?: StatusSk,
-    @Query('peringkat') peringkat?: string,
-  ): Promise<SkAkreditasi[]> {
-    return this.service.findAll({ akreditasiId, status, peringkat });
+  @Post()
+  @ApiOperation({ summary: 'Create SK akreditasi' })
+  @ApiResponse({ status: 201, description: 'SK created', type: SkAkreditasi })
+  async create(@Body() dto: CreateSkAkreditasiDto): Promise<SkAkreditasi> {
+    return this.service.create(dto);
   }
 
   @Get('active')
@@ -38,13 +31,6 @@ export class SkAkreditasiController {
     return this.service.findExpiringSoon(days || 90);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get SK by ID' })
-  @ApiResponse({ status: 200, description: 'SK found', type: SkAkreditasi })
-  async findOne(@Param('id') id: number): Promise<SkAkreditasi> {
-    return this.service.findOne(id);
-  }
-
   @Get('akreditasi/:akreditasiId')
   @ApiOperation({ summary: 'Get SK by akreditasi ID' })
   @ApiResponse({ status: 200, description: 'SK found', type: SkAkreditasi })
@@ -59,11 +45,25 @@ export class SkAkreditasiController {
     return this.service.findByNomorSk(nomorSk);
   }
 
-  @Post()
-  @ApiOperation({ summary: 'Create SK akreditasi' })
-  @ApiResponse({ status: 201, description: 'SK created', type: SkAkreditasi })
-  async create(@Body() dto: CreateSkAkreditasiDto): Promise<SkAkreditasi> {
-    return this.service.create(dto);
+  @Get(':id')
+  @ApiOperation({ summary: 'Get SK by ID' })
+  @ApiResponse({ status: 200, description: 'SK found', type: SkAkreditasi })
+  async findOne(@Param('id') id: number): Promise<SkAkreditasi> {
+    return this.service.findOne(id);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get all SK akreditasi' })
+  @ApiQuery({ name: 'akreditasiId', required: false, type: Number })
+  @ApiQuery({ name: 'status', required: false, enum: StatusSk })
+  @ApiQuery({ name: 'peringkat', required: false, type: String })
+  @ApiResponse({ status: 200, description: 'List SK akreditasi', type: [SkAkreditasi] })
+  async findAll(
+    @Query('akreditasiId') akreditasiId?: number,
+    @Query('status') status?: StatusSk,
+    @Query('peringkat') peringkat?: string,
+  ): Promise<SkAkreditasi[]> {
+    return this.service.findAll({ akreditasiId, status, peringkat });
   }
 
   @Put(':id')

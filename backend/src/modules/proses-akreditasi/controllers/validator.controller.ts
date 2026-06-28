@@ -9,25 +9,11 @@ import { Validator, StatusValidator } from '../entities/validator.entity';
 export class ValidatorController {
   constructor(private readonly service: ValidatorService) {}
 
-  @Get()
-  @ApiOperation({ summary: 'Get all validator assignments' })
-  @ApiQuery({ name: 'registrasiProdiBaruId', required: false, type: Number })
-  @ApiQuery({ name: 'validatorUserId', required: false, type: Number })
-  @ApiQuery({ name: 'status', required: false, enum: StatusValidator })
-  @ApiResponse({ status: 200, description: 'List validator', type: [Validator] })
-  async findAll(
-    @Query('registrasiProdiBaruId') registrasiProdiBaruId?: number,
-    @Query('validatorUserId') validatorUserId?: number,
-    @Query('status') status?: StatusValidator,
-  ): Promise<Validator[]> {
-    return this.service.findAll({ registrasiProdiBaruId, validatorUserId, status });
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get validator by ID' })
-  @ApiResponse({ status: 200, description: 'Validator found', type: Validator })
-  async findOne(@Param('id') id: number): Promise<Validator> {
-    return this.service.findOne(id);
+  @Post()
+  @ApiOperation({ summary: 'Create validator assignment' })
+  @ApiResponse({ status: 201, description: 'Validator created', type: Validator })
+  async create(@Body() dto: CreateValidatorDto): Promise<Validator> {
+    return this.service.create(dto);
   }
 
   @Get('registrasi/:registrasiProdiBaruId')
@@ -44,11 +30,25 @@ export class ValidatorController {
     return this.service.findByValidator(validatorUserId);
   }
 
-  @Post()
-  @ApiOperation({ summary: 'Create validator assignment' })
-  @ApiResponse({ status: 201, description: 'Validator created', type: Validator })
-  async create(@Body() dto: CreateValidatorDto): Promise<Validator> {
-    return this.service.create(dto);
+  @Get(':id')
+  @ApiOperation({ summary: 'Get validator by ID' })
+  @ApiResponse({ status: 200, description: 'Validator found', type: Validator })
+  async findOne(@Param('id') id: number): Promise<Validator> {
+    return this.service.findOne(id);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get all validator assignments' })
+  @ApiQuery({ name: 'registrasiProdiBaruId', required: false, type: Number })
+  @ApiQuery({ name: 'validatorUserId', required: false, type: Number })
+  @ApiQuery({ name: 'status', required: false, enum: StatusValidator })
+  @ApiResponse({ status: 200, description: 'List validator', type: [Validator] })
+  async findAll(
+    @Query('registrasiProdiBaruId') registrasiProdiBaruId?: number,
+    @Query('validatorUserId') validatorUserId?: number,
+    @Query('status') status?: StatusValidator,
+  ): Promise<Validator[]> {
+    return this.service.findAll({ registrasiProdiBaruId, validatorUserId, status });
   }
 
   @Put(':id')

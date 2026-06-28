@@ -16,6 +16,9 @@ export enum RoleUser {
   PRODI = 'PRODI',
   UPPS = 'UPPS',
   VALIDATOR = 'VALIDATOR',
+  // Superset agar enum DB cocok dengan entity auth & data seed.
+  INSTITUTION = 'INSTITUTION',
+  USER = 'USER',
 }
 
 @Entity('users')
@@ -24,8 +27,11 @@ export class User {
   @PrimaryGeneratedColumn('increment', { type: 'bigint', unsigned: true })
   id: number;
 
-  @Column({ length: 255 })
-  nama: string;
+  // Nullable: tabel `users` dipetakan oleh dua entity (auth memakai `name`,
+  // modul ini memakai `nama`). Dibuat nullable agar seed/insert via salah satu
+  // entity tidak gagal karena kolom milik entity lain.
+  @Column({ length: 255, nullable: true })
+  nama?: string;
 
   @Column({ length: 255 })
   email: string;

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, ParseIntPipe, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { TenantService } from './tenant.service';
 
@@ -23,6 +23,19 @@ export class TenantController {
   @ApiOperation({ summary: 'Get tenant by ID' })
   async getTenant(@Param('id', ParseIntPipe) id: number) {
     return this.service.getTenant(id);
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Update tenant' })
+  async updateTenant(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() data: { nama?: string; isActive?: boolean },
+  ) {
+    const tenant = await this.service.updateTenant(id, data);
+    if (!tenant) {
+      throw new NotFoundException(`Tenant with ID ${id} not found`);
+    }
+    return tenant;
   }
 
   @Post(':id/deactivate')

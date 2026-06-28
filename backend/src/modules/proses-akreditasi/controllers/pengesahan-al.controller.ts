@@ -9,6 +9,27 @@ import { PengesahanAl, StatusPengesahanAl } from '../entities/pengesahan-al.enti
 export class PengesahanAlController {
   constructor(private readonly service: PengesahanAlService) {}
 
+  @Post()
+  @ApiOperation({ summary: 'Create pengesahan AL' })
+  @ApiResponse({ status: 201, description: 'Pengesahan created', type: PengesahanAl })
+  async create(@Body() dto: CreatePengesahanAlDto): Promise<PengesahanAl> {
+    return this.service.create(dto);
+  }
+
+  @Get('akreditasi/:akreditasiId')
+  @ApiOperation({ summary: 'Get pengesahan by akreditasi ID' })
+  @ApiResponse({ status: 200, description: 'Pengesahan found', type: PengesahanAl })
+  async findByAkreditasi(@Param('akreditasiId') akreditasiId: number): Promise<PengesahanAl | null> {
+    return this.service.findByAkreditasi(akreditasiId);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get pengesahan AL by ID' })
+  @ApiResponse({ status: 200, description: 'Pengesahan found', type: PengesahanAl })
+  async findOne(@Param('id') id: number): Promise<PengesahanAl> {
+    return this.service.findOne(id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all pengesahan AL' })
   @ApiQuery({ name: 'akreditasiId', required: false, type: Number })
@@ -19,27 +40,6 @@ export class PengesahanAlController {
     @Query('status') status?: StatusPengesahanAl,
   ): Promise<PengesahanAl[]> {
     return this.service.findAll({ akreditasiId, status });
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get pengesahan AL by ID' })
-  @ApiResponse({ status: 200, description: 'Pengesahan found', type: PengesahanAl })
-  async findOne(@Param('id') id: number): Promise<PengesahanAl> {
-    return this.service.findOne(id);
-  }
-
-  @Get('akreditasi/:akreditasiId')
-  @ApiOperation({ summary: 'Get pengesahan by akreditasi ID' })
-  @ApiResponse({ status: 200, description: 'Pengesahan found', type: PengesahanAl })
-  async findByAkreditasi(@Param('akreditasiId') akreditasiId: number): Promise<PengesahanAl | null> {
-    return this.service.findByAkreditasi(akreditasiId);
-  }
-
-  @Post()
-  @ApiOperation({ summary: 'Create pengesahan AL' })
-  @ApiResponse({ status: 201, description: 'Pengesahan created', type: PengesahanAl })
-  async create(@Body() dto: CreatePengesahanAlDto): Promise<PengesahanAl> {
-    return this.service.create(dto);
   }
 
   @Put(':id')

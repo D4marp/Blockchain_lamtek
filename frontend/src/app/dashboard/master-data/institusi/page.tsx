@@ -165,8 +165,8 @@ export default function InstitusiPage() {
   };
 
   const filteredData = data.filter((item) =>
-    item.namaInstitusi?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-    item.kodeInstitusi?.toLowerCase().includes(debouncedSearch.toLowerCase())
+    item.namaInstitusi?.toLowerCase().includes(debouncedSearch?.toLowerCase()) ||
+    item.kodeInstitusi?.toLowerCase().includes(debouncedSearch?.toLowerCase())
   );
 
   const columns = [

@@ -9,6 +9,27 @@ import { LaporanAsesmen, StatusLaporan, JenisLaporan } from '../entities/laporan
 export class LaporanAsesmenController {
   constructor(private readonly service: LaporanAsesmenService) {}
 
+  @Post()
+  @ApiOperation({ summary: 'Create laporan asesmen' })
+  @ApiResponse({ status: 201, description: 'Laporan created', type: LaporanAsesmen })
+  async create(@Body() dto: CreateLaporanAsesmenDto): Promise<LaporanAsesmen> {
+    return this.service.create(dto);
+  }
+
+  @Get('akreditasi/:akreditasiId')
+  @ApiOperation({ summary: 'Get laporan by akreditasi ID' })
+  @ApiResponse({ status: 200, description: 'List laporan', type: [LaporanAsesmen] })
+  async findByAkreditasi(@Param('akreditasiId') akreditasiId: number): Promise<LaporanAsesmen[]> {
+    return this.service.findByAkreditasi(akreditasiId);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get laporan asesmen by ID' })
+  @ApiResponse({ status: 200, description: 'Laporan found', type: LaporanAsesmen })
+  async findOne(@Param('id') id: number): Promise<LaporanAsesmen> {
+    return this.service.findOne(id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all laporan asesmen' })
   @ApiQuery({ name: 'akreditasiId', required: false, type: Number })
@@ -23,27 +44,6 @@ export class LaporanAsesmenController {
     @Query('status') status?: StatusLaporan,
   ): Promise<LaporanAsesmen[]> {
     return this.service.findAll({ akreditasiId, asesorId, jenisLaporan, status });
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get laporan asesmen by ID' })
-  @ApiResponse({ status: 200, description: 'Laporan found', type: LaporanAsesmen })
-  async findOne(@Param('id') id: number): Promise<LaporanAsesmen> {
-    return this.service.findOne(id);
-  }
-
-  @Get('akreditasi/:akreditasiId')
-  @ApiOperation({ summary: 'Get laporan by akreditasi ID' })
-  @ApiResponse({ status: 200, description: 'List laporan', type: [LaporanAsesmen] })
-  async findByAkreditasi(@Param('akreditasiId') akreditasiId: number): Promise<LaporanAsesmen[]> {
-    return this.service.findByAkreditasi(akreditasiId);
-  }
-
-  @Post()
-  @ApiOperation({ summary: 'Create laporan asesmen' })
-  @ApiResponse({ status: 201, description: 'Laporan created', type: LaporanAsesmen })
-  async create(@Body() dto: CreateLaporanAsesmenDto): Promise<LaporanAsesmen> {
-    return this.service.create(dto);
   }
 
   @Put(':id')

@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { formatFileSize, truncateHash, formatDateTime } from '@/lib/utils';
 import toast from 'react-hot-toast';
-import { dokumenApi } from '@/lib/api';
+import { dokumenApi, ipfsApi } from '@/lib/api';
 import { useCrud } from '@/lib/hooks';
 
 interface IpfsDocument {
@@ -40,21 +40,36 @@ interface IpfsDocument {
   createdAt: string;
 }
 
-const ipfsStats = {
-  nodeId: '12D3KooWGzh...dJnC',
-  addresses: 2,
-  repoSize: '15.2 GB',
-  numObjects: 2847,
-  version: '0.18.1',
-  status: 'connected',
+const formatBytes = (n?: number | null) => {
+  if (!n || n <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.min(Math.floor(Math.log(n) / Math.log(1024)), units.length - 1);
+  return `${(n / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
 };
 
 export default function IPFSPage() {
   const [search, setSearch] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [nodeInfo, setNodeInfo] = useState<any>(null);
 
   // Use API hook
   const { data: documents, loading, error, fetchAll } = useCrud<IpfsDocument>(dokumenApi as any);
+
+  // Real IPFS node info from the running kubo node.
+  useEffect(() => {
+    ipfsApi.getInfo().then((r) => setNodeInfo(r.data)).catch(() => setNodeInfo(null));
+  }, []);
+
+  const repoSizeBytes = Number(nodeInfo?.RepoSize ?? 0);
+  const storageMaxBytes = Number(nodeInfo?.StorageMax ?? 0);
+  const ipfsStats = {
+    nodeId: nodeInfo?.ID || '—',
+    repoSize: formatBytes(repoSizeBytes),
+    numObjects: Number(nodeInfo?.NumObjects ?? 0),
+    version: (nodeInfo?.AgentVersion || 'kubo/—').replace(/^kubo\//, '').split('/')[0],
+    status: nodeInfo ? 'connected' : 'disconnected',
+  };
+  const storagePct = storageMaxBytes > 0 ? Math.min(100, Math.round((repoSizeBytes / storageMaxBytes) * 100)) : 0;
 
   // Transform documents to ipfsFiles format
   const ipfsFiles = documents.map((doc) => ({
@@ -85,8 +100,8 @@ export default function IPFSPage() {
 
   const filteredFiles = ipfsFiles.filter(
     (file) =>
-      file.name.toLowerCase().includes(search.toLowerCase()) ||
-      file.hash.toLowerCase().includes(search.toLowerCase())
+      file.name?.toLowerCase().includes(search?.toLowerCase()) ||
+      file.hash?.toLowerCase().includes(search?.toLowerCase())
   );
 
   if (loading) {
@@ -201,12 +216,12 @@ export default function IPFSPage() {
                     r="56"
                     cx="64"
                     cy="64"
-                    strokeDasharray={`${56 * 2 * Math.PI * 0.38} ${56 * 2 * Math.PI}`}
+                    strokeDasharray={`${56 * 2 * Math.PI * (storagePct / 100)} ${56 * 2 * Math.PI}`}
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-secondary-900">38%</p>
+                    <p className="text-2xl font-bold text-secondary-900">{storagePct}%</p>
                     <p className="text-xs text-secondary-500">Used</p>
                   </div>
                 </div>
@@ -215,15 +230,15 @@ export default function IPFSPage() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-secondary-500">Used</span>
-                <span className="font-medium text-secondary-900">15.2 GB</span>
+                <span className="font-medium text-secondary-900">{formatBytes(repoSizeBytes)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-secondary-500">Available</span>
-                <span className="font-medium text-secondary-900">24.8 GB</span>
+                <span className="font-medium text-secondary-900">{formatBytes(Math.max(0, storageMaxBytes - repoSizeBytes))}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-secondary-500">Total</span>
-                <span className="font-medium text-secondary-900">40 GB</span>
+                <span className="font-medium text-secondary-900">{formatBytes(storageMaxBytes)}</span>
               </div>
             </div>
           </div>

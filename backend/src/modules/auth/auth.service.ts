@@ -41,15 +41,49 @@ export class AuthService {
       }
 
       let institusiId: number | null = registerDto.tenantId || null;
+      let createdInstitution:
+        | {
+            id: number;
+            name: string;
+            type?: string;
+            address?: string | null;
+          }
+        | null = null;
 
       // If tenant data is provided, create new institution
       if (registerDto.tenant) {
         this.logger.debug(`[REGISTER] Creating new institution: ${registerDto.tenant.name}`);
-        
-        const institusi = await this.createInstitusi(registerDto.tenant);
-        institusiId = institusi.id;
-        
-        this.logger.log(`[REGISTER] Institution created successfully: ${institusi.id} - ${institusi.namaInstitusi}`);
+
+        try {
+          const institusi = await this.createInstitusi(registerDto.tenant);
+          institusiId = institusi.id;
+          createdInstitution = {
+            id: institusi.id,
+            name: institusi.namaInstitusi,
+            type: institusi.jenisPt,
+            address: institusi.alamat,
+          };
+
+          this.logger.log(
+            `[REGISTER] Institution created successfully: ${institusi.id} - ${institusi.namaInstitusi}`,
+          );
+        } catch (error) {
+          if (!this.isMissingTableError(error, 'institusi')) {
+            throw error;
+          }
+
+          this.logger.warn(
+            '[REGISTER] Table institusi not found, falling back to tenants table creation',
+          );
+
+          const fallbackTenant = await this.createTenantFallback(registerDto.tenant);
+          institusiId = fallbackTenant.id;
+          createdInstitution = fallbackTenant;
+
+          this.logger.log(
+            `[REGISTER] Tenant fallback created successfully: ${fallbackTenant.id} - ${fallbackTenant.name}`,
+          );
+        }
       }
 
       // Hash password
@@ -64,7 +98,6 @@ export class AuthService {
         role: 'PRODI',
         tenantId: institusiId,
         isActive: true,
-        nama: registerDto.name, // Sync with 'name' field for database compatibility
       });
 
       const savedUser = await this.userRepository.save(user);
@@ -83,16 +116,8 @@ export class AuthService {
       };
 
       // Include institution data in response if it was created
-      if (registerDto.tenant && institusiId) {
-        const institusi = await this.institusiRepository.findOne({ where: { id: institusiId } });
-        if (institusi) {
-          response.institusi = {
-            id: institusi.id,
-            name: institusi.namaInstitusi,
-            type: institusi.jenisPt,
-            address: institusi.alamat,
-          };
-        }
+      if (createdInstitution) {
+        response.institusi = createdInstitution;
       }
 
       return response;
@@ -125,6 +150,51 @@ export class AuthService {
     });
 
     return this.institusiRepository.save(institusi);
+  }
+
+  private isMissingTableError(error: any, tableName: string): boolean {
+    const message = String(error?.message || error?.driverError?.sqlMessage || '').toLowerCase();
+    const code = String(error?.code || error?.driverError?.code || '').toUpperCase();
+    return code === 'ER_NO_SUCH_TABLE' || (message.includes("doesn't exist") && message.includes(tableName));
+  }
+
+  private async createTenantFallback(tenantData: any): Promise<{
+    id: number;
+    name: string;
+    type?: string;
+    address?: string | null;
+  }> {
+    const kode = this.generateInstitusiCode(tenantData.name);
+
+    const nextRows: Array<{ nextInstitusiId: number }> = await this.userRepository.query(
+      'SELECT COALESCE(MAX(institusi_id), 0) + 1 AS nextInstitusiId FROM tenants',
+    );
+    const nextInstitusiId = Number(nextRows?.[0]?.nextInstitusiId || 1);
+
+    const insertResult: any = await this.userRepository.query(
+      'INSERT INTO tenants (institusi_id, nama, kode, alamat, is_active, blockchain_registered) VALUES (?, ?, ?, ?, 1, 0)',
+      [nextInstitusiId, tenantData.name, kode, tenantData.address || null],
+    );
+
+    let tenantId = Number(insertResult?.insertId || 0);
+    if (!tenantId) {
+      const tenantRows: Array<{ id: number }> = await this.userRepository.query(
+        'SELECT id FROM tenants WHERE institusi_id = ? LIMIT 1',
+        [nextInstitusiId],
+      );
+      tenantId = Number(tenantRows?.[0]?.id || 0);
+    }
+
+    if (!tenantId) {
+      throw new BadRequestException('Gagal membuat tenant saat registrasi');
+    }
+
+    return {
+      id: tenantId,
+      name: tenantData.name,
+      type: tenantData.type,
+      address: tenantData.address || null,
+    };
   }
 
   private mapJenisPt(type: string): JenisPT {

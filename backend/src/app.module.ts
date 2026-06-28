@@ -17,6 +17,7 @@ import { ProsesAkreditasiModule } from './modules/proses-akreditasi/proses-akred
 import { UsersModule } from './modules/users/users.module';
 import { PembayaranModule } from './modules/pembayaran/pembayaran.module';
 import { KafkaModule } from './modules/kafka/kafka.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -29,18 +30,22 @@ import { KafkaModule } from './modules/kafka/kafka.module';
     // Database
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        type: 'mysql',
-        url: configService.get('DATABASE_URL'),
-        host: configService.get('DB_HOST', 'localhost'),
-        port: configService.get('DB_PORT', 3306),
-        username: configService.get('DB_USERNAME', 'lamtek'),
-        password: configService.get('DB_PASSWORD', 'lamtek123'),
-        database: configService.get('DB_DATABASE', 'lamtek_db'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get('NODE_ENV') !== 'production',
-        logging: configService.get('NODE_ENV') === 'development',
-      }),
+      useFactory: (configService: ConfigService) => {
+        const syncFlag = String(configService.get('TYPEORM_SYNCHRONIZE', 'false')).toLowerCase() === 'true';
+
+        return {
+          type: 'mysql',
+          url: configService.get('DATABASE_URL'),
+          host: configService.get('DB_HOST', 'localhost'),
+          port: configService.get('DB_PORT', 3306),
+          username: configService.get('DB_USERNAME', 'lamtek'),
+          password: configService.get('DB_PASSWORD', 'lamtek123'),
+          database: configService.get('DB_DATABASE', 'lamtek_db'),
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: syncFlag,
+          logging: configService.get('NODE_ENV') === 'development',
+        };
+      },
       inject: [ConfigService],
     }),
     
@@ -59,6 +64,7 @@ import { KafkaModule } from './modules/kafka/kafka.module';
     IpfsModule,
     HealthModule,
     KafkaModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}

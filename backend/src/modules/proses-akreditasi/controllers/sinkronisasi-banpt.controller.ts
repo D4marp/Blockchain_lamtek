@@ -9,6 +9,27 @@ import { SinkronisasiBanpt, StatusSinkronisasi } from '../entities/sinkronisasi-
 export class SinkronisasiBanptController {
   constructor(private readonly service: SinkronisasiBanptService) {}
 
+  @Post()
+  @ApiOperation({ summary: 'Create sinkronisasi' })
+  @ApiResponse({ status: 201, description: 'Sinkronisasi created', type: SinkronisasiBanpt })
+  async create(@Body() dto: CreateSinkronisasiBanptDto): Promise<SinkronisasiBanpt> {
+    return this.service.create(dto);
+  }
+
+  @Get('akreditasi/:akreditasiId')
+  @ApiOperation({ summary: 'Get sinkronisasi by akreditasi ID' })
+  @ApiResponse({ status: 200, description: 'Sinkronisasi found', type: SinkronisasiBanpt })
+  async findByAkreditasi(@Param('akreditasiId') akreditasiId: number): Promise<SinkronisasiBanpt | null> {
+    return this.service.findByAkreditasi(akreditasiId);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get sinkronisasi by ID' })
+  @ApiResponse({ status: 200, description: 'Sinkronisasi found', type: SinkronisasiBanpt })
+  async findOne(@Param('id') id: number): Promise<SinkronisasiBanpt> {
+    return this.service.findOne(id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all sinkronisasi BAN-PT' })
   @ApiQuery({ name: 'akreditasiId', required: false, type: Number })
@@ -21,27 +42,6 @@ export class SinkronisasiBanptController {
     @Query('status') status?: StatusSinkronisasi,
   ): Promise<SinkronisasiBanpt[]> {
     return this.service.findAll({ akreditasiId, skId, status });
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get sinkronisasi by ID' })
-  @ApiResponse({ status: 200, description: 'Sinkronisasi found', type: SinkronisasiBanpt })
-  async findOne(@Param('id') id: number): Promise<SinkronisasiBanpt> {
-    return this.service.findOne(id);
-  }
-
-  @Get('akreditasi/:akreditasiId')
-  @ApiOperation({ summary: 'Get sinkronisasi by akreditasi ID' })
-  @ApiResponse({ status: 200, description: 'Sinkronisasi found', type: SinkronisasiBanpt })
-  async findByAkreditasi(@Param('akreditasiId') akreditasiId: number): Promise<SinkronisasiBanpt | null> {
-    return this.service.findByAkreditasi(akreditasiId);
-  }
-
-  @Post()
-  @ApiOperation({ summary: 'Create sinkronisasi' })
-  @ApiResponse({ status: 201, description: 'Sinkronisasi created', type: SinkronisasiBanpt })
-  async create(@Body() dto: CreateSinkronisasiBanptDto): Promise<SinkronisasiBanpt> {
-    return this.service.create(dto);
   }
 
   @Put(':id')

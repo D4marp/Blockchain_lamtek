@@ -1,40 +1,48 @@
+# ============================================================
+# REPO: blockchain — Hardhat 1 node + IPFS (kubo) dalam 1 container.
+# Base = Debian (node:20-slim) karena binary kubo dynamic-linked glibc
+# (tidak jalan di alpine/musl). Builder & production harus sama libc agar
+# native module Hardhat cocok.
+# ============================================================
+
 # Build stage
-FROM node:20-alpine AS builder
-
+FROM node:20-slim AS builder
 WORKDIR /app
-
-# Install dependencies
 COPY package*.json ./
 RUN npm ci
-
-# Copy source code
 COPY . .
-
-# Compile Hardhat contracts
 RUN npm run compile
 
-# Production stage
-FROM node:20-alpine
-
+# Production stage — Hardhat node + IPFS (kubo).
+FROM node:20-slim
 WORKDIR /app
 
-# Reuse installed dependencies from builder
+# ca-certificates untuk kubo.
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Binary IPFS (kubo) dari image resmi (glibc -> cocok dengan Debian).
+COPY --from=ipfs/kubo:latest /usr/local/bin/ipfs /usr/local/bin/ipfs
+
+# IPFS menyimpan repo di sini (dimiliki user node).
+ENV IPFS_PATH=/app/.ipfs
+
+# Reuse dependencies & artefak dari builder.
 COPY package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
-
-# Copy compiled contracts and scripts from builder
 COPY --from=builder /app/artifacts ./artifacts
 COPY --from=builder /app/cache ./cache
 COPY contracts ./contracts
 COPY hardhat.config.js ./hardhat.config.js
 COPY scripts ./scripts
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
-RUN chown -R nodejs:nodejs /app
-USER nodejs
+RUN chmod +x ./scripts/docker-entrypoint.sh
 
-EXPOSE 8545 8546
+# node:20-slim sudah punya user non-root "node".
+RUN chown -R node:node /app
+USER node
 
-# Default command to run Hardhat node
-CMD ["npx", "hardhat", "node", "--hostname", "0.0.0.0"]
+EXPOSE 8545 8546 5001 8080
+
+# Start IPFS daemon + Hardhat node + auto-deploy contracts on boot.
+CMD ["sh", "./scripts/docker-entrypoint.sh"]

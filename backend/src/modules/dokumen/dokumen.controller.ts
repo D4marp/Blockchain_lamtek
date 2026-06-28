@@ -19,18 +19,10 @@ import { DokumenService, TipeDokumen } from './dokumen.service';
 export class DokumenController {
   constructor(private readonly service: DokumenService) {}
 
-  @Post('upload/:kodeAkreditasi')
-  @ApiOperation({ summary: 'Upload dokumen ke IPFS dan blockchain' })
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadDokumen(
-    @Param('kodeAkreditasi') kodeAkreditasi: string,
-    @UploadedFile() file: any,
-    @Body('tipeDokumen') tipeDokumen: TipeDokumen,
-    @Body('metadata') metadata?: string,
-  ) {
-    const parsedMetadata = metadata ? JSON.parse(metadata) : undefined;
-    return this.service.uploadDokumen(kodeAkreditasi, file, tipeDokumen, parsedMetadata);
+  @Get()
+  @ApiOperation({ summary: 'Get semua dokumen' })
+  async getAllDokumen() {
+    return this.service.getAllDokumen();
   }
 
   @Get('akreditasi/:kodeAkreditasi')
@@ -48,6 +40,20 @@ export class DokumenController {
     } catch (error) {
       res.status(HttpStatus.NOT_FOUND).json({ error: 'Document not found' });
     }
+  }
+
+  @Post('upload/:kodeAkreditasi')
+  @ApiOperation({ summary: 'Upload dokumen ke IPFS dan blockchain' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadDokumen(
+    @Param('kodeAkreditasi') kodeAkreditasi: string,
+    @UploadedFile() file: any,
+    @Body('tipeDokumen') tipeDokumen: TipeDokumen,
+    @Body('metadata') metadata?: string,
+  ) {
+    const parsedMetadata = metadata ? JSON.parse(metadata) : undefined;
+    return this.service.uploadDokumen(kodeAkreditasi, file, tipeDokumen, parsedMetadata);
   }
 
   @Post('verify/:hash')

@@ -1,0 +1,29 @@
+# REPO: blockchain — Hardhat 1 node + IPFS (kubo) dalam 1 container.
+# Auto-deploy kontrak + IPFS daemon saat start.
+# Deploy: set -a; . .env.paas; set +a; docker stack deploy -c stack.yml blockchain
+version: "3.8"
+
+services:
+  blockchain:
+    image: ${BLOCKCHAIN_IMAGE:-REGISTRY/lamtek-blockchain}
+    environment:
+      RPC_HOST: ${RPC_HOST:-0.0.0.0}
+      RPC_PORT: ${RPC_PORT:-8545}
+      DEPLOY_ON_START: ${DEPLOY_ON_START:-true}
+      RUN_SEED: ${RUN_SEED:-false}
+      ENABLE_IPFS: ${ENABLE_IPFS:-true}
+    ports:
+      - "8545:8545"   # JSON-RPC
+      - "5001:5001"   # IPFS API
+      - "8080:8080"   # IPFS Gateway
+    volumes:
+      - ipfs_data:/app/.ipfs
+    networks:
+      - lamtek-net
+    deploy:
+      replicas: 1
+      restart_policy: { condition: any }
+
+networks:
+  lamtek-net:
+    external: true

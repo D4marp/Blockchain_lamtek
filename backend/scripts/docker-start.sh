@@ -44,7 +44,7 @@ print_status "Waiting for database..."
 RETRY=0
 
 while [ $RETRY -lt 30 ]; do
-  if npm run typeorm -- query "SELECT 1" 2>/dev/null; then
+  if node -e "const mysql=require('mysql2/promise');(async()=>{const c=await mysql.createConnection({host:process.env.DB_HOST,port:Number(process.env.DB_PORT||3306),user:process.env.DB_USERNAME,password:process.env.DB_PASSWORD,database:process.env.DB_DATABASE});await c.query('SELECT 1');await c.end();})().catch(()=>process.exit(1));" >/dev/null 2>&1; then
     print_success "Database ready"
     break
   fi
@@ -62,7 +62,11 @@ echo ""
 
 # Run migrations
 print_status "Running migrations..."
-npm run migration:run 2>&1
+if npm run migration:run 2>&1; then
+  print_success "Migrations completed"
+else
+  print_warning "Migration failed, continuing with existing schema"
+fi
 
 echo ""
 

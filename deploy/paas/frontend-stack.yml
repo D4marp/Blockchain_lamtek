@@ -1,0 +1,25 @@
+# SERVICE 4 — Frontend (Next.js). Deploy: docker stack deploy -c ... frontend
+# IMPORTANT: NEXT_PUBLIC_* are BUILD-TIME. They must be baked when you build the
+# image (see README step 1). The `environment:` block here only covers the
+# runtime-only vars. Push REGISTRY/lamtek-frontend first (stack ignores `build:`).
+version: "3.8"
+
+services:
+  frontend:
+    image: ${FRONTEND_IMAGE:-REGISTRY/lamtek-frontend}
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      # server-side /api rewrite proxy target (internal service name):
+      BACKEND_INTERNAL_URL: ${BACKEND_INTERNAL_URL:-http://backend:3000}
+    ports:
+      - "3002:3002"
+    networks:
+      - lamtek-net
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: any
+
+networks:
+  lamtek-net:
+    external: true

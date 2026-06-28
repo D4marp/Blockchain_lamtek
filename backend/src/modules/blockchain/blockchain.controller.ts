@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { BlockchainService } from './blockchain.service';
 
@@ -25,5 +25,40 @@ export class BlockchainController {
       ...info,
       totalAkreditasi,
     };
+  }
+
+  @Get('transactions')
+  @ApiOperation({ summary: 'Get recent real transactions from the node' })
+  async getTransactions(@Query('limit') limit?: string) {
+    const n = limit && !isNaN(Number(limit)) ? Number(limit) : 25;
+    return this.blockchainService.getRecentTransactions(n);
+  }
+
+  @Get('contracts')
+  @ApiOperation({ summary: 'Get deployed smart contract addresses' })
+  getContracts() {
+    return this.blockchainService.getContracts();
+  }
+
+  @Get('network-stats')
+  @ApiOperation({ summary: 'Get real network statistics' })
+  async getNetworkStats() {
+    return this.blockchainService.getNetworkStats();
+  }
+
+  @Get('audit/all')
+  @ApiOperation({ summary: 'Get audit info from blockchain' })
+  async getAllAuditTrails() {
+    try {
+      const info = await this.blockchainService.getBlockchainInfo();
+      return {
+        info,
+        note: 'Gunakan GET /blockchain/audit/{kodeAkreditasi} untuk mendapatkan audit trail spesifik',
+        message: 'Audit trails tersimpan per akreditasi di blockchain',
+      };
+    } catch (error) {
+      console.error('Error fetching audit info:', error);
+      return { error: 'Failed to fetch audit info', info: null };
+    }
   }
 }

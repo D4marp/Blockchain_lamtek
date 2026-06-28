@@ -159,8 +159,8 @@ export default function UsersPage() {
 
   const filteredUsers = users.filter((user) => {
     const matchSearch =
-      user.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      user.email.toLowerCase().includes(debouncedSearch.toLowerCase());
+      user.name?.toLowerCase().includes(debouncedSearch?.toLowerCase()) ||
+      user.email?.toLowerCase().includes(debouncedSearch?.toLowerCase());
     const matchRole = !roleFilter || user.role === roleFilter;
     return matchSearch && matchRole;
   });

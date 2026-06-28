@@ -9,6 +9,27 @@ import { ResponAsesor, StatusRespon } from '../entities/respon-asesor.entity';
 export class ResponAsesorController {
   constructor(private readonly service: ResponAsesorService) {}
 
+  @Post()
+  @ApiOperation({ summary: 'Create respon asesor' })
+  @ApiResponse({ status: 201, description: 'Respon created', type: ResponAsesor })
+  async create(@Body() dto: CreateResponAsesorDto): Promise<ResponAsesor> {
+    return this.service.create(dto);
+  }
+
+  @Get('penawaran/:penawaranId')
+  @ApiOperation({ summary: 'Get respon by penawaran ID' })
+  @ApiResponse({ status: 200, description: 'Respon found', type: ResponAsesor })
+  async findByPenawaran(@Param('penawaranId') penawaranId: number): Promise<ResponAsesor | null> {
+    return this.service.findByPenawaran(penawaranId);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get respon asesor by ID' })
+  @ApiResponse({ status: 200, description: 'Respon found', type: ResponAsesor })
+  async findOne(@Param('id') id: number): Promise<ResponAsesor> {
+    return this.service.findOne(id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all respon asesor' })
   @ApiQuery({ name: 'penawaranId', required: false, type: Number })
@@ -21,27 +42,6 @@ export class ResponAsesorController {
     @Query('status') status?: StatusRespon,
   ): Promise<ResponAsesor[]> {
     return this.service.findAll({ penawaranId, asesorId, status });
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get respon asesor by ID' })
-  @ApiResponse({ status: 200, description: 'Respon found', type: ResponAsesor })
-  async findOne(@Param('id') id: number): Promise<ResponAsesor> {
-    return this.service.findOne(id);
-  }
-
-  @Get('penawaran/:penawaranId')
-  @ApiOperation({ summary: 'Get respon by penawaran ID' })
-  @ApiResponse({ status: 200, description: 'Respon found', type: ResponAsesor })
-  async findByPenawaran(@Param('penawaranId') penawaranId: number): Promise<ResponAsesor | null> {
-    return this.service.findByPenawaran(penawaranId);
-  }
-
-  @Post()
-  @ApiOperation({ summary: 'Create respon asesor' })
-  @ApiResponse({ status: 201, description: 'Respon created', type: ResponAsesor })
-  async create(@Body() dto: CreateResponAsesorDto): Promise<ResponAsesor> {
-    return this.service.create(dto);
   }
 
   @Put(':id')

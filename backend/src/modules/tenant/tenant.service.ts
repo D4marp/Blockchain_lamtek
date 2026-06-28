@@ -44,6 +44,24 @@ export class TenantService {
     return Array.from(this.tenants.values());
   }
 
+  async updateTenant(
+    institusiId: number,
+    data: { nama?: string; isActive?: boolean },
+  ): Promise<Tenant | undefined> {
+    const tenant = this.tenants.get(institusiId);
+    if (!tenant) {
+      return undefined;
+    }
+    if (data.nama !== undefined) {
+      tenant.nama = data.nama;
+    }
+    if (data.isActive !== undefined) {
+      tenant.isActive = data.isActive;
+    }
+    this.tenants.set(institusiId, tenant);
+    return tenant;
+  }
+
   async deactivateTenant(institusiId: number): Promise<boolean> {
     const tenant = this.tenants.get(institusiId);
     if (tenant) {

@@ -106,9 +106,9 @@ export default function AsesmenKecukupanPage() {
 
   const filteredData = (Array.isArray(data) ? data : []).filter((item) => {
     const matchSearch =
-      item.namaProdi?.toLowerCase().includes(search.toLowerCase()) ||
-      item.universitas?.toLowerCase().includes(search.toLowerCase()) ||
-      item.akreditasiId?.toLowerCase().includes(search.toLowerCase());
+      item.namaProdi?.toLowerCase().includes(search?.toLowerCase()) ||
+      item.universitas?.toLowerCase().includes(search?.toLowerCase()) ||
+      item.akreditasiId?.toLowerCase().includes(search?.toLowerCase());
     const matchStatus = !statusFilter || item.status === statusFilter;
     return matchSearch && matchStatus;
   });

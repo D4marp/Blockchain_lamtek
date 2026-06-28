@@ -60,7 +60,18 @@ export function useCrud<T extends { id: number | string }>(
     setError(null);
     try {
       const response = await api.getAll(params || initialParams);
-      setData(response.data);
+      // Backend list endpoints are inconsistent: some return a bare array,
+      // others a paginated `{ data: [...] }`, and a few an informational object
+      // (e.g. GET /dokumen). Coerce to an array so consumers can safely `.map`.
+      const payload: any = response.data;
+      const list = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload?.items)
+            ? payload.items
+            : [];
+      setData(list);
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Gagal memuat data');
     } finally {

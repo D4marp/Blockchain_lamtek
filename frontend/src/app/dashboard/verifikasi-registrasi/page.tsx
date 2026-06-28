@@ -78,9 +78,9 @@ export default function VerifikasiRegistrasiPage() {
 
   const filteredData = data.filter((item) => {
     const matchSearch =
-      item.prodi.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.noRegistrasi.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.institusi.toLowerCase().includes(searchQuery.toLowerCase());
+      item.prodi?.toLowerCase().includes(searchQuery?.toLowerCase()) ||
+      item.noRegistrasi?.toLowerCase().includes(searchQuery?.toLowerCase()) ||
+      item.institusi?.toLowerCase().includes(searchQuery?.toLowerCase());
     const matchStatus = !filterStatus || item.statusVerifikasi === filterStatus;
     const matchTipe = !filterTipe || item.tipeAkreditasi === filterTipe;
     return matchSearch && matchStatus && matchTipe;

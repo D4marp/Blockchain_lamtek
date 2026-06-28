@@ -44,14 +44,14 @@ interface BlockchainTransaction {
   gasUsed: number;
 }
 
-const networkStats = {
-  status: 'online',
+const defaultNetworkStats = {
+  status: 'offline',
   chainId: 1337,
-  blockHeight: 12456,
-  peers: 2,
-  pendingTx: 3,
+  blockHeight: 0,
+  peers: 1,
+  pendingTx: 0,
   avgBlockTime: 5,
-  totalTransactions: 8542,
+  totalTransactions: 0,
 };
 
 const getActionLabel = (action: string) => {
@@ -84,6 +84,8 @@ export default function BlockchainPage() {
   const [search, setSearch] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [transactions, setTransactions] = useState<BlockchainTransaction[]>([]);
+  const [networkStats, setNetworkStats] = useState(defaultNetworkStats);
+  const [contracts, setContracts] = useState<{ name: string; address: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,10 +93,36 @@ export default function BlockchainPage() {
     try {
       setLoading(true);
       setError(null);
-      // Fetch transactions - using a general endpoint or all akreditasi
-      const response = await blockchainApi.getAuditLog('all');
-      const data = response.data;
-      setTransactions(Array.isArray(data) ? data : data.transactions || data.data || []);
+      const [txRes, statsRes, contractsRes] = await Promise.all([
+        blockchainApi.getRecentTransactions(30),
+        blockchainApi.getNetworkStats(),
+        blockchainApi.getContracts(),
+      ]);
+      const rawTx = Array.isArray(txRes.data) ? txRes.data : (txRes.data?.data ?? []);
+      setTransactions(
+        rawTx.map((t: any, i: number) => ({
+          id: t.hash || String(i),
+          txHash: t.hash,
+          blockNumber: t.blockNumber,
+          action: t.action,
+          akreditasiId: t.contract,
+          actor: t.from,
+          timestamp: t.timestamp,
+          status: (t.status || 'CONFIRMED').toLowerCase(),
+          gasUsed: 0,
+        })),
+      );
+      const s = statsRes.data || {};
+      setNetworkStats({
+        status: s.connected ? 'online' : 'offline',
+        chainId: Number(s.chainId ?? 1337),
+        blockHeight: Number(s.blockHeight ?? 0),
+        peers: Number(s.peers ?? 1),
+        pendingTx: Number(s.pendingTransactions ?? 0),
+        avgBlockTime: Number(s.avgBlockTime ?? 5) || 5,
+        totalTransactions: Number(s.totalTransactions ?? 0),
+      });
+      setContracts(Array.isArray(contractsRes.data) ? contractsRes.data : []);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Gagal memuat data transaksi');
       setTransactions([]);
@@ -126,9 +154,9 @@ export default function BlockchainPage() {
 
   const filteredTransactions = transactions.filter(
     (tx) =>
-      tx.txHash?.toLowerCase().includes(search.toLowerCase()) ||
-      tx.akreditasiId?.toLowerCase().includes(search.toLowerCase()) ||
-      tx.action?.toLowerCase().includes(search.toLowerCase())
+      tx.txHash?.toLowerCase().includes(search?.toLowerCase()) ||
+      tx.akreditasiId?.toLowerCase().includes(search?.toLowerCase()) ||
+      tx.action?.toLowerCase().includes(search?.toLowerCase())
   );
 
   if (loading) {
@@ -263,27 +291,25 @@ export default function BlockchainPage() {
         <Card>
           <CardHeader title="Smart Contracts" subtitle="Deployed contracts" />
           <div className="space-y-3">
-            <div className="p-3 bg-secondary-50 rounded-lg">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-secondary-900">AkreditasiRegistry</span>
-                <Badge variant="success" size="sm">Active</Badge>
-              </div>
-              <code className="text-xs text-secondary-500 mt-1 block">{truncateHash('0x5FbDB2315678afecb367f032d93F642f64180aa3', 8)}</code>
-            </div>
-            <div className="p-3 bg-secondary-50 rounded-lg">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-secondary-900">AsesmenKecukupan</span>
-                <Badge variant="success" size="sm">Active</Badge>
-              </div>
-              <code className="text-xs text-secondary-500 mt-1 block">{truncateHash('0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512', 8)}</code>
-            </div>
-            <div className="p-3 bg-secondary-50 rounded-lg">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-secondary-900">DokumenIPFSRegistry</span>
-                <Badge variant="success" size="sm">Active</Badge>
-              </div>
-              <code className="text-xs text-secondary-500 mt-1 block">{truncateHash('0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0', 8)}</code>
-            </div>
+            {contracts.length === 0 ? (
+              <p className="text-sm text-secondary-500">Belum ada kontrak ter-deploy.</p>
+            ) : (
+              contracts.map((c) => (
+                <div key={c.address} className="p-3 bg-secondary-50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-secondary-900">{c.name}</span>
+                    <Badge variant="success" size="sm">Active</Badge>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(c.address)}
+                    title={c.address}
+                    className="text-xs text-secondary-500 mt-1 block hover:text-primary-600"
+                  >
+                    <code>{truncateHash(c.address, 8)}</code>
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </Card>
       </div>

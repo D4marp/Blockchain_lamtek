@@ -21,7 +21,17 @@ export class AsesmenLapanganService {
     targetWaktuAL: Date;
   }): Promise<AsesmenLapangan> {
     const asesmen = this.asesmenRepository.create(data);
-    return this.asesmenRepository.save(asesmen);
+    const saved = await this.asesmenRepository.save(asesmen);
+
+    // Anchor on-chain (best-effort; BlockchainService swallows failures).
+    await this.blockchainService.createAsesmenLapanganOnChain({
+      kodeAkreditasi: data.kodeAkreditasi,
+      akreditasiId: data.akreditasiId,
+      keaId: data.keaId,
+      targetWaktu: data.targetWaktuAL,
+    });
+
+    return saved;
   }
 
   async findOne(id: number): Promise<AsesmenLapangan> {
@@ -63,7 +73,17 @@ export class AsesmenLapanganService {
       asesmen.ipfsHashSuratTugas = ipfsHash;
     }
 
-    return this.asesmenRepository.save(asesmen);
+    const saved = await this.asesmenRepository.save(asesmen);
+
+    await this.blockchainService.setJadwalVisitasiOnChain({
+      kodeAkreditasi: asesmen.kodeAkreditasi,
+      tanggalAwal: data.tglVisitasiAwal,
+      tanggalAkhir: data.tglVisitasiAkhir,
+      noSuratTugas: data.noSuratTugas,
+      ipfsHashSuratTugas: asesmen.ipfsHashSuratTugas,
+    });
+
+    return saved;
   }
 
   async submitLaporan(
@@ -94,7 +114,16 @@ export class AsesmenLapanganService {
 
     asesmen.lapALSubmitted = true;
 
-    return this.asesmenRepository.save(asesmen);
+    const saved = await this.asesmenRepository.save(asesmen);
+
+    await this.blockchainService.submitLaporanALOnChain({
+      kodeAkreditasi: asesmen.kodeAkreditasi,
+      ipfsHashLaporanAL: asesmen.ipfsHashLaporanAL,
+      ipfsHashBeritaAcara: asesmen.ipfsHashBeritaAcara,
+      ipfsHashUmpanBalik: asesmen.ipfsHashUmpanBalik,
+    });
+
+    return saved;
   }
 
   async submitTanggapan(
@@ -114,7 +143,15 @@ export class AsesmenLapanganService {
       asesmen.asesorMenanggapiAL = true;
     }
 
-    return this.asesmenRepository.save(asesmen);
+    const saved = await this.asesmenRepository.save(asesmen);
+
+    await this.blockchainService.submitTanggapanALOnChain({
+      kodeAkreditasi: asesmen.kodeAkreditasi,
+      ipfsHashTanggapan: ipfsHash,
+      dariUPPS,
+    });
+
+    return saved;
   }
 
   async tetapkanHasil(
@@ -132,7 +169,15 @@ export class AsesmenLapanganService {
     asesmen.catatanAsesor = data.catatanAsesor;
     asesmen.hasilDitetapkanKEA = true;
 
-    return this.asesmenRepository.save(asesmen);
+    const saved = await this.asesmenRepository.save(asesmen);
+
+    await this.blockchainService.tetapkanHasilALOnChain({
+      kodeAkreditasi: asesmen.kodeAkreditasi,
+      rekomendasiPeringkat: data.rekomendasiPeringkat,
+      notePenetapan: data.notePenetapan,
+    });
+
+    return saved;
   }
 
   async findAll(options: { page?: number; limit?: number }): Promise<{

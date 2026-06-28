@@ -56,7 +56,9 @@ EXPOSE 3000
 # Set working directory
 WORKDIR /app
 
-# Health check - connects to health endpoint
+# Health check - hits the NestJS health endpoint (matches docker-compose)
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=40s \
+  CMD curl -f http://localhost:3000/api/v1/health || exit 1
 
 # Run migrations and start application via startup script
 CMD ["bash", "./scripts/docker-start.sh"]

@@ -84,8 +84,47 @@ export default function DokumenPage() {
   const [uploadKategori, setUploadKategori] = useState('');
   const [uploadAkreditasi, setUploadAkreditasi] = useState('');
 
-  // Use API hook
-  const { data: documents, loading, error, fetchAll } = useCrud<Dokumen>(dokumenApi as any);
+  // Show ALL uploaded documents (global DB index). Code field is just a filter.
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [viewAkreditasi, setViewAkreditasi] = useState('');
+
+  const gateway = (process.env.NEXT_PUBLIC_IPFS_GATEWAY || 'http://localhost:8088').replace(/\/$/, '');
+
+  const loadDocs = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await dokumenApi.getAll();
+      const list = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
+      setDocuments(
+        list.map((d: any) => ({
+          id: d.id ?? d.ipfsHash,
+          nama: d.namaFile || d.namaDokumen || d.nama || 'Dokumen',
+          kategori: d.tipeDokumen || d.kategori || 'LAINNYA',
+          akreditasi: d.kodeAkreditasi || '',
+          prodi: '',
+          ukuran: Number(d.ukuran || d.ukuranBytes || 0),
+          mimeType: d.mimeType || '',
+          isVerified: !!d.isVerified,
+          ipfsHash: d.ipfsHash,
+          sha256: d.sha256 || d.hashSHA256 || '',
+          blockchainTxHash: d.blockchainTxHash || d.blockchainTxHashIpfs || null,
+          uploadedBy: d.uploadedBy || '',
+          createdAt: d.createdAt || d.uploadedAt || '',
+          url: d.gatewayUrl || d.url || `${gateway}/ipfs/${d.ipfsHash}`,
+        })),
+      );
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || 'Gagal memuat dokumen');
+      setDocuments([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [gateway]);
+
+  useEffect(() => { loadDocs(); }, [loadDocs]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setUploadFiles((prev) => [...prev, ...acceptedFiles]);
@@ -106,21 +145,56 @@ export default function DokumenPage() {
     setUploadFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleUpload = () => {
-    toast.success(`${uploadFiles.length} file berhasil diunggah ke IPFS`);
-    setShowUploadModal(false);
-    setUploadFiles([]);
-    setUploadKategori('');
-    setUploadAkreditasi('');
+  const handleUpload = async () => {
+    if (!uploadAkreditasi.trim()) {
+      toast.error('Isi Nomor Akreditasi dulu (mis. AKR-2026-0001)');
+      return;
+    }
+    if (uploadFiles.length === 0) return;
+
+    const tipeDokumen = uploadKategori || 'LAINNYA';
+    const loadingId = toast.loading('Mengunggah ke IPFS & mencatat ke blockchain...');
+    try {
+      const results: any[] = [];
+      for (const file of uploadFiles) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('tipeDokumen', tipeDokumen);
+        fd.append('metadata', JSON.stringify({ kategori: uploadKategori, originalName: file.name }));
+        const res = await dokumenApi.upload(uploadAkreditasi.trim(), fd);
+        results.push(res.data);
+      }
+      toast.dismiss(loadingId);
+      const last = results[results.length - 1] || {};
+      const cid = String(last.ipfsHash || '');
+      const tx = String(last.blockchainTxHash || '');
+      toast.success(
+        `${results.length} file tersimpan. IPFS CID: ${cid.slice(0, 14)}…` +
+          (tx && tx !== 'FAILED' && tx !== 'SKIPPED' ? ` • tx blockchain: ${tx.slice(0, 14)}…` : ''),
+        { duration: 7000 },
+      );
+      setShowUploadModal(false);
+      setUploadFiles([]);
+      setUploadKategori('');
+      setUploadAkreditasi('');
+      await loadDocs();
+    } catch (err: any) {
+      toast.dismiss(loadingId);
+      toast.error(err?.response?.data?.message || 'Gagal mengunggah dokumen');
+    }
   };
 
   const filteredDocuments = documents.filter((doc) => {
+    const q = (search || '').toLowerCase();
     const matchSearch =
-      doc.nama?.toLowerCase().includes(search.toLowerCase()) ||
-      doc.prodi?.toLowerCase().includes(search.toLowerCase()) ||
-      (doc.akreditasi || doc.akreditasiId)?.toLowerCase().includes(search.toLowerCase());
+      !q ||
+      doc.nama?.toLowerCase().includes(q) ||
+      doc.ipfsHash?.toLowerCase().includes(q) ||
+      doc.akreditasi?.toLowerCase().includes(q);
     const matchKategori = !kategoriFilter || doc.kategori === kategoriFilter;
-    return matchSearch && matchKategori;
+    const matchAkreditasi =
+      !viewAkreditasi || doc.akreditasi?.toLowerCase().includes(viewAkreditasi.toLowerCase());
+    return matchSearch && matchKategori && matchAkreditasi;
   });
 
   if (loading) {
@@ -141,7 +215,7 @@ export default function DokumenPage() {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
           <p className="mt-2 text-secondary-900 font-medium">Gagal memuat data</p>
           <p className="text-secondary-500 text-sm">{error}</p>
-          <Button onClick={() => fetchAll()} className="mt-4">
+          <Button onClick={() => loadDocs()} className="mt-4">
             <RefreshCw className="w-4 h-4 mr-2" />
             Coba Lagi
           </Button>
@@ -171,7 +245,7 @@ export default function DokumenPage() {
               <FileText className="w-6 h-6 text-primary-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-secondary-900">2,847</p>
+              <p className="text-2xl font-bold text-secondary-900">{documents.length}</p>
               <p className="text-sm text-secondary-500">Total Dokumen</p>
             </div>
           </div>
@@ -214,9 +288,19 @@ export default function DokumenPage() {
       {/* Filters */}
       <Card>
         <div className="flex flex-col lg:flex-row gap-4">
+          <div className="w-full lg:w-72">
+            <Input
+              label="Filter Kode Akreditasi (opsional)"
+              placeholder="Semua — kosongkan untuk lihat semua"
+              leftIcon={<FileText className="w-4 h-4" />}
+              value={viewAkreditasi}
+              onChange={(e) => setViewAkreditasi(e.target.value.toUpperCase())}
+            />
+          </div>
           <div className="flex-1">
             <Input
-              placeholder="Cari dokumen, prodi, atau nomor akreditasi..."
+              label="Cari"
+              placeholder="Cari nama dokumen / hash..."
               leftIcon={<Search className="w-4 h-4" />}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -283,10 +367,18 @@ export default function DokumenPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" title={doc.ipfsHash}>
                       <HardDrive className="w-3.5 h-3.5 text-secondary-400" />
                       <code className="text-xs text-secondary-600">{truncateHash(doc.ipfsHash, 6)}</code>
                     </div>
+                    {doc.blockchainTxHash ? (
+                      <div className="flex items-center gap-1 mt-1" title={`Tx blockchain: ${doc.blockchainTxHash}`}>
+                        <Shield className="w-3 h-3 text-success-600" />
+                        <code className="text-[10px] text-success-700">{truncateHash(doc.blockchainTxHash, 6)}</code>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-secondary-400 mt-1 block">belum tercatat tx</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {doc.isVerified ? (
@@ -306,13 +398,50 @@ export default function DokumenPage() {
                   </TableCell>
                   <TableCell align="center">
                     <div className="flex items-center justify-center gap-1">
-                      <Button variant="ghost" size="sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Lihat dokumen di IPFS"
+                        onClick={() => window.open(doc.url, '_blank')}
+                      >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Unduh dokumen"
+                        onClick={() => {
+                          const a = document.createElement('a');
+                          a.href = `${doc.url}?download=true&filename=${encodeURIComponent(doc.nama)}`;
+                          a.download = doc.nama;
+                          a.target = '_blank';
+                          document.body.appendChild(a);
+                          a.click();
+                          a.remove();
+                        }}
+                      >
                         <Download className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Info blockchain (salin tx)"
+                        onClick={() => {
+                          if (doc.blockchainTxHash) {
+                            navigator.clipboard?.writeText(doc.blockchainTxHash);
+                            toast.success(
+                              `Tercatat di blockchain (DokumenIPFSRegistry).\nTx: ${doc.blockchainTxHash}\n(disalin ke clipboard)`,
+                              { duration: 8000 },
+                            );
+                          } else {
+                            navigator.clipboard?.writeText(doc.ipfsHash);
+                            toast(
+                              `Tersimpan di IPFS (CID: ${doc.ipfsHash}). Belum ada tx blockchain untuk dokumen ini.`,
+                              { duration: 8000 },
+                            );
+                          }
+                        }}
+                      >
                         <Shield className="w-4 h-4" />
                       </Button>
                     </div>

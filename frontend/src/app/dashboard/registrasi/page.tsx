@@ -20,7 +20,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
-import { registrasiAkreditasiApi } from '@/lib/api';
+import { registrasiAkreditasiApi, prodiApi, institusiApi } from '@/lib/api';
 import { useCrud, useDebounce } from '@/lib/hooks';
 
 interface Registrasi {
@@ -37,8 +37,10 @@ interface Registrasi {
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'info' | 'warning' | 'success' | 'danger'; icon: React.ElementType }> = {
   DRAFT: { label: 'Draft', variant: 'default', icon: FileText },
+  SUBMITTED: { label: 'Diajukan', variant: 'info', icon: Clock },
   PENDING: { label: 'Pending', variant: 'warning', icon: Clock },
   VERIFIKASI_DOKUMEN: { label: 'Verifikasi Dokumen', variant: 'info', icon: AlertTriangle },
+  VERIFIED: { label: 'Terverifikasi', variant: 'success', icon: CheckCircle },
   APPROVED: { label: 'Disetujui', variant: 'success', icon: CheckCircle },
   REJECTED: { label: 'Ditolak', variant: 'danger', icon: XCircle },
 };
@@ -48,11 +50,42 @@ export default function RegistrasiPage() {
   const debouncedSearch = useDebounce(searchQuery, 300);
   const [filterStatus, setFilterStatus] = useState('');
 
-  const { data, loading, error, fetchAll } = useCrud<Registrasi>(registrasiAkreditasiApi);
+  const { data, loading, error, fetchAll } = useCrud<any>(registrasiAkreditasiApi);
+  const [prodiMap, setProdiMap] = useState<Record<string, string>>({});
+  const [institusiMap, setInstitusiMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchAll({ search: debouncedSearch, status: filterStatus || undefined });
   }, [debouncedSearch, filterStatus]);
+
+  // Load master data once to resolve prodi/institusi names from their IDs.
+  useEffect(() => {
+    Promise.all([prodiApi.getAll(), institusiApi.getAll()])
+      .then(([pRes, iRes]) => {
+        // Response can be either T[] directly or { data: T[] }; treat as any so
+        // the Array.isArray guard doesn't narrow the else-branch to `never`.
+        const pData: any = pRes.data;
+        const iData: any = iRes.data;
+        const pList = Array.isArray(pData) ? pData : (pData?.data ?? []);
+        const iList = Array.isArray(iData) ? iData : (iData?.data ?? []);
+        setProdiMap(Object.fromEntries(pList.map((p: any) => [String(p.id), p.namaProdi])));
+        setInstitusiMap(Object.fromEntries(iList.map((i: any) => [String(i.id), i.namaInstitusi])));
+      })
+      .catch(() => {/* names stay blank if master data unavailable */});
+  }, []);
+
+  // Normalise the backend shape (prodiId/institusiId/nomorRegistrasi/lowercase status)
+  // into the display shape this table expects.
+  const rows: Registrasi[] = (Array.isArray(data) ? data : []).map((item: any) => ({
+    id: item.id,
+    noRegistrasi: item.nomorRegistrasi || item.noRegistrasi || `REG-${String(item.id).padStart(4, '0')}`,
+    prodi: item.prodi || prodiMap[String(item.prodiId)] || (item.prodiId ? `Prodi #${item.prodiId}` : '-'),
+    institusi: item.institusi || institusiMap[String(item.institusiId)] || (item.institusiId ? `Institusi #${item.institusiId}` : '-'),
+    jenjang: item.jenjang || item.tahunAkademik || '-',
+    tipeAkreditasi: item.tipeAkreditasi || item.jenisAkreditasi || '-',
+    status: String(item.status || 'DRAFT').toUpperCase(),
+    tanggalPengajuan: (item.tanggalRegistrasi || item.tanggalPengajuan || item.createdAt || '').toString().slice(0, 10),
+  }));
 
   if (error) {
     return (
@@ -64,11 +97,13 @@ export default function RegistrasiPage() {
     );
   }
 
-  const filteredData = data.filter((item) => {
+  const filteredData = rows.filter((item) => {
+    const q = (searchQuery || '').toLowerCase();
     const matchSearch =
-      item.prodi.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.institusi.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.noRegistrasi.toLowerCase().includes(searchQuery.toLowerCase());
+      !q ||
+      item.prodi?.toLowerCase().includes(q) ||
+      item.institusi?.toLowerCase().includes(q) ||
+      item.noRegistrasi?.toLowerCase().includes(q);
     const matchStatus = !filterStatus || item.status === filterStatus;
     return matchSearch && matchStatus;
   });
@@ -109,10 +144,10 @@ export default function RegistrasiPage() {
   ];
 
   const stats = [
-    { label: 'Total Registrasi', value: data.length, color: 'bg-blue-100 text-blue-600' },
-    { label: 'Pending', value: data.filter((r) => r.status === 'PENDING').length, color: 'bg-amber-100 text-amber-600' },
-    { label: 'Disetujui', value: data.filter((r) => r.status === 'APPROVED').length, color: 'bg-green-100 text-green-600' },
-    { label: 'Draft', value: data.filter((r) => r.status === 'DRAFT').length, color: 'bg-gray-100 text-gray-600' },
+    { label: 'Total Registrasi', value: rows.length, color: 'bg-blue-100 text-blue-600' },
+    { label: 'Diajukan', value: rows.filter((r) => r.status === 'SUBMITTED').length, color: 'bg-amber-100 text-amber-600' },
+    { label: 'Disetujui', value: rows.filter((r) => r.status === 'APPROVED' || r.status === 'VERIFIED').length, color: 'bg-green-100 text-green-600' },
+    { label: 'Draft', value: rows.filter((r) => r.status === 'DRAFT').length, color: 'bg-gray-100 text-gray-600' },
   ];
 
   return (

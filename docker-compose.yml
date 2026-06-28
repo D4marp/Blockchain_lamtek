@@ -79,7 +79,7 @@ services:
       - ./backend:/app
       - /app/node_modules
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -203,7 +203,7 @@ services:
       lamtek-network:
         ipv4_address: 172.20.0.10
     healthcheck:
-      test: ["CMD", "curl", "-X", "POST", "--data", '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}', "http://localhost:8545"]
+      test: ["CMD", "bash", "-lc", "cat < /dev/null > /dev/tcp/127.0.0.1/8545"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -254,7 +254,7 @@ services:
       lamtek-network:
         ipv4_address: 172.20.0.11
     healthcheck:
-      test: ["CMD", "curl", "-X", "POST", "--data", '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}', "http://localhost:8545"]
+      test: ["CMD", "bash", "-lc", "cat < /dev/null > /dev/tcp/127.0.0.1/8545"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -305,7 +305,7 @@ services:
       lamtek-network:
         ipv4_address: 172.20.0.12
     healthcheck:
-      test: ["CMD", "curl", "-X", "POST", "--data", '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}', "http://localhost:8545"]
+      test: ["CMD", "bash", "-lc", "cat < /dev/null > /dev/tcp/127.0.0.1/8545"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -356,7 +356,7 @@ services:
       lamtek-network:
         ipv4_address: 172.20.0.13
     healthcheck:
-      test: ["CMD", "curl", "-X", "POST", "--data", '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}', "http://localhost:8545"]
+      test: ["CMD", "bash", "-lc", "cat < /dev/null > /dev/tcp/127.0.0.1/8545"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -465,9 +465,8 @@ services:
 networks:
   lamtek-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
+    # No fixed subnet: let Docker auto-assign so the stack is portable and does
+    # not clash with other projects (locally or on PaaS).
 
 volumes:
   mysql-data:

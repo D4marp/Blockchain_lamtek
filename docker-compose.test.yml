@@ -1,0 +1,130 @@
+version: '3.9'
+
+services:
+  # ============================================
+  # MySQL Database for Testing
+  # ============================================
+  mysql:
+    image: mysql:8.0
+    container_name: lamtek-mysql-test
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: lamtek_test_db
+      MYSQL_USER: lamtek
+      MYSQL_PASSWORD: lamtek123
+    volumes:
+      - ./database/init:/docker-entrypoint-initdb.d
+      - mysql-test-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lamtek-test-network
+
+  # ============================================
+  # Redis for Testing
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: lamtek-redis-test
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lamtek-test-network
+
+  # ============================================
+  # Backend Unit & E2E Tests
+  # ============================================
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lamtek-backend-test
+    environment:
+      - NODE_ENV=test
+      - PORT=3000
+      - DATABASE_URL=mysql://lamtek:lamtek123@mysql:3306/lamtek_test_db
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USERNAME=lamtek
+      - DB_PASSWORD=lamtek123
+      - DB_DATABASE=lamtek_test_db
+      - JWT_SECRET=test-secret-key
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: >
+      sh -c "
+        npm install &&
+        npm run test:cov
+      "
+    networks:
+      - lamtek-test-network
+
+  # ============================================
+  # Blockchain Smart Contract Tests
+  # ============================================
+  blockchain-test:
+    build:
+      context: ./blockchain
+      dockerfile: Dockerfile
+    container_name: lamtek-blockchain-test
+    environment:
+      - NODE_ENV=test
+    volumes:
+      - ./blockchain:/app
+      - /app/node_modules
+    command: >
+      sh -c "
+        npm install &&
+        npm run test
+      "
+    networks:
+      - lamtek-test-network
+
+  # ============================================
+  # Frontend Linting & Type Check
+  # ============================================
+  frontend-test:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: lamtek-frontend-test
+    environment:
+      - NODE_ENV=test
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: >
+      sh -c "
+        npm install &&
+        npm run lint &&
+        npm run type-check
+      "
+    networks:
+      - lamtek-test-network
+
+networks:
+  lamtek-test-network:
+    driver: bridge
+
+volumes:
+  mysql-test-data:

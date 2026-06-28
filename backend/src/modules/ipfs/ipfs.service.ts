@@ -54,10 +54,24 @@ export class IpfsService implements OnModuleInit {
   async getNodeInfo(): Promise<any> {
     try {
       const response = await fetch(`${this.apiUrl}/api/v0/id`, { method: 'POST' });
-      if (response.ok) {
-        return await response.json();
+      if (!response.ok) throw new Error('Failed to get node info');
+      const id: any = await response.json();
+
+      // Enrich with real repository statistics (size + object count).
+      let repo: any = {};
+      try {
+        const repoRes = await fetch(`${this.apiUrl}/api/v0/repo/stat`, { method: 'POST' });
+        if (repoRes.ok) repo = await repoRes.json();
+      } catch {
+        /* repo stat is best-effort */
       }
-      throw new Error('Failed to get node info');
+
+      return {
+        ...id,
+        RepoSize: repo.RepoSize ?? null,
+        StorageMax: repo.StorageMax ?? null,
+        NumObjects: repo.NumObjects ?? null,
+      };
     } catch (error) {
       this.logger.error('Failed to get IPFS node info:', error);
       throw error;

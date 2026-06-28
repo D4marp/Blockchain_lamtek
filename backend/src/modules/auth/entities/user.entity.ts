@@ -20,16 +20,31 @@ export class User {
   @Column({ type: 'varchar', length: 255 })
   password: string;
 
-  @Column({ type: 'enum', enum: ['ADMIN', 'SEKRETARIAT', 'KOMITE_EVALUASI', 'MAJELIS_AKREDITASI', 'ASESOR', 'PRODI', 'UPPS', 'VALIDATOR'], default: 'PRODI' })
+  @Column({
+    type: 'enum',
+    enum: [
+      'ADMIN',
+      'SEKRETARIAT',
+      'KOMITE_EVALUASI',
+      'MAJELIS_AKREDITASI',
+      'ASESOR',
+      'PRODI',
+      'UPPS',
+      'VALIDATOR',
+      'INSTITUTION',
+      'USER',
+    ],
+    default: 'PRODI',
+  })
   role: string;
 
   @Column({ type: 'bigint', unsigned: true, nullable: true })
   tenantId: number;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   noIdentitas: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   noSertifikatEdukatif: string;
 
   @Column({ type: 'boolean', default: true })
@@ -41,31 +56,14 @@ export class User {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  // Additional columns that exist in database but managed separately
-  @Column({ type: 'varchar', length: 255 })
-  nama: string; // Redundant with 'name', kept for compatibility
-
-  @Column({ name: 'tenant_id', type: 'bigint', unsigned: true, nullable: true })
-  tenant_id: number; // snake_case version for compatibility
-
-  @Column({ name: 'prodi_id', type: 'bigint', unsigned: true, nullable: true })
-  prodi_id: number;
-
-  @Column({ name: 'institusi_id', type: 'bigint', unsigned: true, nullable: true })
-  institusi_id: number;
-
-  @Column({ name: 'asesor_id', type: 'bigint', unsigned: true, nullable: true })
-  asesor_id: number;
-
-  @Column({ name: 'is_active', type: 'boolean', default: true })
-  is_active: boolean;
-
-  @Column({ name: 'last_login', type: 'datetime', nullable: true })
-  last_login: Date;
-
-  @Column({ name: 'avatar_url', type: 'varchar', length: 255, nullable: true })
-  avatar_url: string;
-
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  phone: string;
+  // Legacy compatibility fields kept as plain properties (not mapped to DB columns)
+  nama?: string;
+  tenant_id?: number;
+  prodi_id?: number;
+  institusi_id?: number;
+  asesor_id?: number;
+  is_active?: boolean;
+  last_login?: Date;
+  avatar_url?: string;
+  phone?: string;
 }

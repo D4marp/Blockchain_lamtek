@@ -9,27 +9,11 @@ import { TanggapanAl, StatusTanggapan } from '../entities/tanggapan-al.entity';
 export class TanggapanAlController {
   constructor(private readonly service: TanggapanAlService) {}
 
-  @Get()
-  @ApiOperation({ summary: 'Get all tanggapan AL' })
-  @ApiQuery({ name: 'akreditasiId', required: false, type: Number })
-  @ApiQuery({ name: 'laporanId', required: false, type: Number })
-  @ApiQuery({ name: 'prodiId', required: false, type: Number })
-  @ApiQuery({ name: 'status', required: false, enum: StatusTanggapan })
-  @ApiResponse({ status: 200, description: 'List tanggapan AL', type: [TanggapanAl] })
-  async findAll(
-    @Query('akreditasiId') akreditasiId?: number,
-    @Query('laporanId') laporanId?: number,
-    @Query('prodiId') prodiId?: number,
-    @Query('status') status?: StatusTanggapan,
-  ): Promise<TanggapanAl[]> {
-    return this.service.findAll({ akreditasiId, laporanId, prodiId, status });
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get tanggapan AL by ID' })
-  @ApiResponse({ status: 200, description: 'Tanggapan found', type: TanggapanAl })
-  async findOne(@Param('id') id: number): Promise<TanggapanAl> {
-    return this.service.findOne(id);
+  @Post()
+  @ApiOperation({ summary: 'Create tanggapan AL' })
+  @ApiResponse({ status: 201, description: 'Tanggapan created', type: TanggapanAl })
+  async create(@Body() dto: CreateTanggapanAlDto): Promise<TanggapanAl> {
+    return this.service.create(dto);
   }
 
   @Get('laporan/:laporanId')
@@ -46,11 +30,27 @@ export class TanggapanAlController {
     return this.service.findByAkreditasi(akreditasiId);
   }
 
-  @Post()
-  @ApiOperation({ summary: 'Create tanggapan AL' })
-  @ApiResponse({ status: 201, description: 'Tanggapan created', type: TanggapanAl })
-  async create(@Body() dto: CreateTanggapanAlDto): Promise<TanggapanAl> {
-    return this.service.create(dto);
+  @Get(':id')
+  @ApiOperation({ summary: 'Get tanggapan AL by ID' })
+  @ApiResponse({ status: 200, description: 'Tanggapan found', type: TanggapanAl })
+  async findOne(@Param('id') id: number): Promise<TanggapanAl> {
+    return this.service.findOne(id);
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get all tanggapan AL' })
+  @ApiQuery({ name: 'akreditasiId', required: false, type: Number })
+  @ApiQuery({ name: 'laporanId', required: false, type: Number })
+  @ApiQuery({ name: 'prodiId', required: false, type: Number })
+  @ApiQuery({ name: 'status', required: false, enum: StatusTanggapan })
+  @ApiResponse({ status: 200, description: 'List tanggapan AL', type: [TanggapanAl] })
+  async findAll(
+    @Query('akreditasiId') akreditasiId?: number,
+    @Query('laporanId') laporanId?: number,
+    @Query('prodiId') prodiId?: number,
+    @Query('status') status?: StatusTanggapan,
+  ): Promise<TanggapanAl[]> {
+    return this.service.findAll({ akreditasiId, laporanId, prodiId, status });
   }
 
   @Put(':id')

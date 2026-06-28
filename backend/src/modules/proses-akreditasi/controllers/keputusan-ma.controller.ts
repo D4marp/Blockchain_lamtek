@@ -9,6 +9,27 @@ import { KeputusanMa, StatusKeputusan } from '../entities/keputusan-ma.entity';
 export class KeputusanMaController {
   constructor(private readonly service: KeputusanMaService) {}
 
+  @Post()
+  @ApiOperation({ summary: 'Create keputusan MA' })
+  @ApiResponse({ status: 201, description: 'Keputusan created', type: KeputusanMa })
+  async create(@Body() dto: CreateKeputusanMaDto): Promise<KeputusanMa> {
+    return this.service.create(dto);
+  }
+
+  @Get('akreditasi/:akreditasiId')
+  @ApiOperation({ summary: 'Get keputusan by akreditasi ID' })
+  @ApiResponse({ status: 200, description: 'Keputusan found', type: KeputusanMa })
+  async findByAkreditasi(@Param('akreditasiId') akreditasiId: number): Promise<KeputusanMa | null> {
+    return this.service.findByAkreditasi(akreditasiId);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get keputusan MA by ID' })
+  @ApiResponse({ status: 200, description: 'Keputusan found', type: KeputusanMa })
+  async findOne(@Param('id') id: number): Promise<KeputusanMa> {
+    return this.service.findOne(id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all keputusan MA' })
   @ApiQuery({ name: 'akreditasiId', required: false, type: Number })
@@ -21,27 +42,6 @@ export class KeputusanMaController {
     @Query('peringkatFinal') peringkatFinal?: string,
   ): Promise<KeputusanMa[]> {
     return this.service.findAll({ akreditasiId, status, peringkatFinal });
-  }
-
-  @Get(':id')
-  @ApiOperation({ summary: 'Get keputusan MA by ID' })
-  @ApiResponse({ status: 200, description: 'Keputusan found', type: KeputusanMa })
-  async findOne(@Param('id') id: number): Promise<KeputusanMa> {
-    return this.service.findOne(id);
-  }
-
-  @Get('akreditasi/:akreditasiId')
-  @ApiOperation({ summary: 'Get keputusan by akreditasi ID' })
-  @ApiResponse({ status: 200, description: 'Keputusan found', type: KeputusanMa })
-  async findByAkreditasi(@Param('akreditasiId') akreditasiId: number): Promise<KeputusanMa | null> {
-    return this.service.findByAkreditasi(akreditasiId);
-  }
-
-  @Post()
-  @ApiOperation({ summary: 'Create keputusan MA' })
-  @ApiResponse({ status: 201, description: 'Keputusan created', type: KeputusanMa })
-  async create(@Body() dto: CreateKeputusanMaDto): Promise<KeputusanMa> {
-    return this.service.create(dto);
   }
 
   @Put(':id')

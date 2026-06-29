@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { BlockchainService } from '../blockchain/blockchain.service';
 import { IpfsService } from '../ipfs/ipfs.service';
+import { Dokumen } from '../dokumen/entities/dokumen.entity';
 
 export type QueryOperation = 'create' | 'update' | 'delete' | 'snapshot' | 'soft_delete';
 
@@ -36,6 +39,8 @@ export class ConnectorService {
   constructor(
     private readonly blockchainService: BlockchainService,
     private readonly ipfsService: IpfsService,
+    @InjectRepository(Dokumen)
+    private readonly dokumenRepository: Repository<Dokumen>,
   ) {}
 
   async processDataQuery(event: DataQueryEvent): Promise<void> {
@@ -111,6 +116,9 @@ export class ConnectorService {
     }
 
     let ipfsHash = event.ipfsHash;
+    let url: string | undefined;
+    let size: number | undefined;
+    let sha256: string | undefined;
 
     if (!ipfsHash && event.contentBase64) {
       const buffer = Buffer.from(event.contentBase64, 'base64');
@@ -123,6 +131,9 @@ export class ConnectorService {
 
       const upload = await this.ipfsService.uploadFile(virtualFile);
       ipfsHash = upload.ipfsHash;
+      url = upload.url;
+      size = upload.size;
+      sha256 = upload.sha256;
 
       this.logger.log(`Kafka DataFile uploaded to IPFS: ${event.referenceId} -> ${ipfsHash}`);
     }
@@ -132,12 +143,51 @@ export class ConnectorService {
       return;
     }
 
-    await this.blockchainService.uploadDokumen({
+    const blockchainTxHash = await this.blockchainService.uploadDokumen({
       kodeAkreditasi: event.kodeAkreditasi,
       ipfsHash,
       namaDokumen: event.fileName,
       tipeDokumen: event.tipeDokumen,
     });
+
+    const blockchainTxHashIpfs = await this.blockchainService.uploadDokumenIPFS({
+      kodeAkreditasi: event.kodeAkreditasi,
+      ipfsHash,
+      namaFile: event.fileName,
+      tipeDokumen: event.tipeDokumen,
+      ukuranBytes: size,
+      mimeType: event.mimeType,
+      hashSHA256: sha256,
+      metadata: event.metadata ? JSON.stringify(event.metadata) : '',
+    });
+
+    // This is the row the dokumen list / IPFS Storage page actually reads —
+    // without it the upload "succeeds" (IPFS + blockchain both wrote fine)
+    // but never shows up anywhere in the UI.
+    try {
+      await this.dokumenRepository.save(
+        this.dokumenRepository.create({
+          kodeAkreditasi: event.kodeAkreditasi,
+          namaFile: event.fileName,
+          tipeDokumen: String(event.tipeDokumen || 'LAINNYA'),
+          ipfsHash,
+          mimeType: event.mimeType,
+          ukuran: size ?? 0,
+          sha256,
+          gatewayUrl: url,
+          blockchainTxHash:
+            blockchainTxHash && !['FAILED', 'SKIPPED'].includes(blockchainTxHash)
+              ? blockchainTxHash
+              : null,
+          blockchainTxHashIpfs:
+            blockchainTxHashIpfs && !['FAILED', 'SKIPPED'].includes(blockchainTxHashIpfs)
+              ? blockchainTxHashIpfs
+              : null,
+        }),
+      );
+    } catch (error) {
+      this.logger.error(`Failed to persist document index row for ${event.referenceId}:`, error);
+    }
 
     this.logger.log(`Kafka DataFile recorded on blockchain: ${event.referenceId} -> ${ipfsHash}`);
   }

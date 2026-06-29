@@ -103,8 +103,8 @@ export class UsersService {
     return this.repository.save(user);
   }
 
-  async updateLastLogin(id: number): Promise<void> {
-    await this.repository.update(id, { lastLogin: new Date() });
+  async updateLastLogin(_id: number): Promise<void> {
+    // last_login column not present in current schema; no-op
   }
 
   async validatePassword(user: User, password: string): Promise<boolean> {

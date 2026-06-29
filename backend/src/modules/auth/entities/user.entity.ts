@@ -14,6 +14,9 @@ export class User {
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
+  @Column({ type: 'varchar', length: 255 })
+  nama: string;
+
   @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
@@ -57,7 +60,6 @@ export class User {
   updatedAt: Date;
 
   // Legacy compatibility fields kept as plain properties (not mapped to DB columns)
-  nama?: string;
   tenant_id?: number;
   prodi_id?: number;
   institusi_id?: number;

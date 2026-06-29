@@ -55,6 +55,7 @@ async function seedDatabase() {
         const hashedPassword = await bcrypt.hash(testUser.password, 10);
         const user = userRepository.create({
           ...testUser,
+          nama: testUser.name,
           password: hashedPassword,
         });
         await userRepository.save(user);

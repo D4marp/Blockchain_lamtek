@@ -1,0 +1,23 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm.
+Deployer: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+✓ AkreditasiRegistry: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+✓ AsesmenKecukupanContract: 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+✓ AsesmenLapanganContract: 0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
+✓ DokumenIPFSRegistry: 0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9
+✓ tenant 1
+✓ tenant 2
+✓ tenant 3
+✓ AKR-2026-0001 tx=0x73e4b5652e9f466164ac5433625cabf0b4226406f09028aa720b2be9eaedbe11
+✓ AKR-2026-0002 tx=0x3bb74eafbc227d124168bf3b37071055f2559b0502e8a88865b4cf0460147557
+✓ AKR-2026-0003 tx=0x89e1a255750c14dba3c69d390ef9c6d920f358481f482a796e84421eb871d4fa
+✓ AKR-2026-0004 tx=0x652c4cd6582d5618fe76bdc8722638ee5506b70787e509dc89ef62e274367550
+✓ AKR-2026-0005 tx=0x9bcb99667aada235349f7354257b5fdef04fc4b562d9e97978183e7f0249a21d
+✓ AKR-2026-0006 tx=0xc76f2b06fce33228ea624246e4bc67ddeb825d66232959f005a5dcfd6d11c75d
+✓ AKR-2026-0007 tx=0x4b41fdf0884d620732fcf385069215b0d24fe8d9d818aa73a75c540eaafd0a71
+✓ AKR-2025-0008 tx=0x66808590f492c5e8ae2adb3dd8a364f6f0ca01766bc44fe713557b4673527680
+✓ AKR-2025-0009 tx=0x0b200b8d39d8d8a8cd1c85a3e483a95d8aea896d7e755282f627e6566b369a63
+✓ AKR-2025-0010 tx=0x5ad8d548fb2a0f8f785ce9ec615694d203b40263172c0952646b4ff29a76e7c6
+
+Total akreditasi on-chain: 10
+Transactions: 13
+Saved: /Users/HCMPublic/Kuliah/Blockchain_lamtek/blockchain/deployments/hardhat-transactions.json

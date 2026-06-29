@@ -1,5 +1,7 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { ethers, Contract, Wallet, JsonRpcProvider, TransactionReceipt, Signer } from 'ethers';
 import { VaultService } from './vault.service';
 
@@ -67,6 +69,7 @@ export class BlockchainService implements OnModuleInit {
   constructor(
     private configService: ConfigService,
     private vaultService: VaultService,
+    @InjectDataSource() private dataSource: DataSource,
   ) {}
 
   async onModuleInit() {
@@ -195,6 +198,47 @@ export class BlockchainService implements OnModuleInit {
   }
 
   /**
+   * Wait for a transaction receipt, then asynchronously index it into
+   * blockchain_transactions so the dashboard reads a live, O(1) audit trail
+   * instead of re-scanning the whole chain on every request.
+   */
+  private async waitAndRecord(
+    tx: { wait: () => Promise<TransactionReceipt> },
+    meta: { functionName: string; contract?: Contract; kodeAkreditasi?: string },
+  ): Promise<TransactionReceipt> {
+    const receipt = await tx.wait();
+    this.recordTransaction(receipt, meta).catch((error) =>
+      this.logger.debug(`blockchain_transactions insert skipped: ${error.message}`),
+    );
+    return receipt;
+  }
+
+  private async recordTransaction(
+    receipt: TransactionReceipt,
+    meta: { functionName: string; contract?: Contract; kodeAkreditasi?: string },
+  ): Promise<void> {
+    const contractAddress = meta.contract
+      ? (meta.contract.target as string)
+      : receipt.to || null;
+
+    await this.dataSource.query(
+      `INSERT INTO blockchain_transactions
+         (tx_hash, block_number, contract_address, function_name, kode_akreditasi, from_address, gas_used, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'SUCCESS')
+       ON DUPLICATE KEY UPDATE block_number = VALUES(block_number), status = 'SUCCESS'`,
+      [
+        receipt.hash,
+        Number(receipt.blockNumber),
+        contractAddress,
+        meta.functionName,
+        meta.kodeAkreditasi || null,
+        receipt.from,
+        receipt.gasUsed != null ? Number(receipt.gasUsed) : null,
+      ],
+    );
+  }
+
+  /**
    * Register akreditasi to blockchain
    */
   async registerAkreditasi(data: {
@@ -227,7 +271,11 @@ export class BlockchainService implements OnModuleInit {
         data.ipfsHashDokumen || ''
       );
 
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'registerAkreditasi',
+        contract: this.akreditasiContract,
+        kodeAkreditasi: data.kodeAkreditasi,
+      });
       this.logger.log(`Akreditasi registered: ${receipt.hash}`);
 
       return receipt.hash;
@@ -275,7 +323,11 @@ export class BlockchainService implements OnModuleInit {
         data.keterangan || ''
       );
 
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'updateStatus',
+        contract: this.akreditasiContract,
+        kodeAkreditasi: data.kodeAkreditasi,
+      });
       this.logger.log(`Status updated: ${receipt.hash}`);
 
       return receipt.hash;
@@ -307,7 +359,11 @@ export class BlockchainService implements OnModuleInit {
         data.tipeDokumen
       );
 
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'uploadDokumen',
+        contract: this.akreditasiContract,
+        kodeAkreditasi: data.kodeAkreditasi,
+      });
       this.logger.log(`Document uploaded: ${receipt.hash}`);
 
       return receipt.hash;
@@ -352,7 +408,11 @@ export class BlockchainService implements OnModuleInit {
         tanggalBerakhirTimestamp
       );
 
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'tetapkanPeringkat',
+        contract: this.akreditasiContract,
+        kodeAkreditasi: data.kodeAkreditasi,
+      });
       this.logger.log(`Peringkat set: ${receipt.hash}`);
 
       return receipt.hash;
@@ -434,7 +494,10 @@ export class BlockchainService implements OnModuleInit {
 
     try {
       const tx = await this.akreditasiContract.registerTenant(institusiId, nama);
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'registerTenant',
+        contract: this.akreditasiContract,
+      });
 
       return receipt.hash;
     } catch (error) {
@@ -483,7 +546,11 @@ export class BlockchainService implements OnModuleInit {
       const targetTs = data.targetWaktu ? Math.floor(data.targetWaktu.getTime() / 1000) : 0;
       const tx = await this.asesmenKecukupanContract.createAsesmenKecukupan(
         data.kodeAkreditasi, data.akreditasiId, data.keaId || 0, targetTs);
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'createAsesmenKecukupan',
+        contract: this.asesmenKecukupanContract,
+        kodeAkreditasi: data.kodeAkreditasi,
+      });
       this.logger.log(`AsesmenKecukupan created on-chain: ${receipt.hash}`);
       return receipt.hash;
     } catch (error) {
@@ -503,7 +570,11 @@ export class BlockchainService implements OnModuleInit {
       if (Number(onChainId) === 0) return 'NOT_FOUND';
       const tx = await this.asesmenKecukupanContract.submitLaporanAK(
         onChainId, data.ipfsHashLaporan, data.deskripsi || '');
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'submitLaporanAK',
+        contract: this.asesmenKecukupanContract,
+        kodeAkreditasi: data.kodeAkreditasi,
+      });
       return receipt.hash;
     } catch (error) {
       this.logger.error('Failed to submit laporan AK on blockchain:', error);
@@ -523,7 +594,11 @@ export class BlockchainService implements OnModuleInit {
       if (Number(onChainId) === 0) return 'NOT_FOUND';
       const tx = await this.asesmenKecukupanContract.tetapkanHasilAK(
         onChainId, data.konsisten, Math.round(data.skor || 0), data.notePenetapan || '');
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'tetapkanHasilAK',
+        contract: this.asesmenKecukupanContract,
+        kodeAkreditasi: data.kodeAkreditasi,
+      });
       return receipt.hash;
     } catch (error) {
       this.logger.error('Failed to set hasil AK on blockchain:', error);
@@ -546,7 +621,11 @@ export class BlockchainService implements OnModuleInit {
       const targetTs = data.targetWaktu ? Math.floor(data.targetWaktu.getTime() / 1000) : 0;
       const tx = await this.asesmenLapanganContract.createAsesmenLapangan(
         data.kodeAkreditasi, data.akreditasiId, data.keaId || 0, targetTs);
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'createAsesmenLapangan',
+        contract: this.asesmenLapanganContract,
+        kodeAkreditasi: data.kodeAkreditasi,
+      });
       this.logger.log(`AsesmenLapangan created on-chain: ${receipt.hash}`);
       return receipt.hash;
     } catch (error) {
@@ -572,7 +651,11 @@ export class BlockchainService implements OnModuleInit {
         Math.floor(data.tanggalAkhir.getTime() / 1000),
         data.noSuratTugas || '',
         data.ipfsHashSuratTugas || '');
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'setJadwalVisitasi',
+        contract: this.asesmenLapanganContract,
+        kodeAkreditasi: data.kodeAkreditasi,
+      });
       return receipt.hash;
     } catch (error) {
       this.logger.error('Failed to set jadwal visitasi on blockchain:', error);
@@ -595,7 +678,11 @@ export class BlockchainService implements OnModuleInit {
         data.ipfsHashLaporanAL || '',
         data.ipfsHashBeritaAcara || '',
         data.ipfsHashUmpanBalik || '');
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'submitLaporanAL',
+        contract: this.asesmenLapanganContract,
+        kodeAkreditasi: data.kodeAkreditasi,
+      });
       return receipt.hash;
     } catch (error) {
       this.logger.error('Failed to submit laporan AL on blockchain:', error);
@@ -614,7 +701,11 @@ export class BlockchainService implements OnModuleInit {
       if (Number(onChainId) === 0) return 'NOT_FOUND';
       const tx = await this.asesmenLapanganContract.submitTanggapanAL(
         onChainId, data.ipfsHashTanggapan, data.dariUPPS);
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'submitTanggapanAL',
+        contract: this.asesmenLapanganContract,
+        kodeAkreditasi: data.kodeAkreditasi,
+      });
       return receipt.hash;
     } catch (error) {
       this.logger.error('Failed to submit tanggapan AL on blockchain:', error);
@@ -633,7 +724,11 @@ export class BlockchainService implements OnModuleInit {
       if (Number(onChainId) === 0) return 'NOT_FOUND';
       const tx = await this.asesmenLapanganContract.tetapkanHasilAL(
         onChainId, data.rekomendasiPeringkat, data.notePenetapan || '');
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'tetapkanHasilAL',
+        contract: this.asesmenLapanganContract,
+        kodeAkreditasi: data.kodeAkreditasi,
+      });
       return receipt.hash;
     } catch (error) {
       this.logger.error('Failed to set hasil AL on blockchain:', error);
@@ -667,7 +762,11 @@ export class BlockchainService implements OnModuleInit {
         data.mimeType || '',
         data.hashSHA256 || '',
         data.metadata || '');
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'uploadDokumen',
+        contract: this.dokumenIpfsContract,
+        kodeAkreditasi: data.kodeAkreditasi,
+      });
       this.logger.log(`Dokumen recorded on DokumenIPFSRegistry: ${receipt.hash}`);
       return receipt.hash;
     } catch (error) {
@@ -687,7 +786,10 @@ export class BlockchainService implements OnModuleInit {
       if (Number(dokumenId) === 0) return 'NOT_FOUND';
       const tx = await this.dokumenIpfsContract.verifyDokumen(
         dokumenId, data.verified, data.catatan || '');
-      const receipt: TransactionReceipt = await tx.wait();
+      const receipt = await this.waitAndRecord(tx, {
+        functionName: 'verifyDokumen',
+        contract: this.dokumenIpfsContract,
+      });
       return receipt.hash;
     } catch (error) {
       this.logger.error('Failed to verify dokumen on DokumenIPFSRegistry:', error);
@@ -829,25 +931,57 @@ export class BlockchainService implements OnModuleInit {
   /**
    * Scan the most recent blocks and return real transactions from the node,
    * labelled with the contract + function they invoked.
+   * Falls back to blockchain_transactions table when the chain has no contract txs yet.
    */
   async getRecentTransactions(limit = 25): Promise<any[]> {
+    // DB audit trail is O(1) and live (every write records a row here now) —
+    // try it first. Only fall back to scanning the chain itself (bounded, so
+    // it can't degrade as Clique keeps minting empty blocks forever) when the
+    // table doesn't have enough rows yet.
+    const fromDb = await this.getTransactionsFromDatabase(limit);
+    if (fromDb.length >= limit) return fromDb.slice(0, limit);
+
+    const onChain = await this.scanOnChainTransactions(limit, 300);
+    const merged = [...fromDb];
+    const seen = new Set(fromDb.map((t) => t.hash?.toLowerCase()));
+    for (const row of onChain) {
+      const key = row.hash?.toLowerCase();
+      if (key && !seen.has(key)) {
+        merged.push(row);
+        seen.add(key);
+      }
+      if (merged.length >= limit) break;
+    }
+    return merged
+      .sort((a, b) => (b.blockNumber || 0) - (a.blockNumber || 0))
+      .slice(0, limit);
+  }
+
+  private async scanOnChainTransactions(limit: number, maxBlocksToScan = 300): Promise<any[]> {
     if (!this.provider) return [];
     try {
       const latest = await this.provider.getBlockNumber();
       const byAddress = this.contractByAddress();
       const out: any[] = [];
+      const oldestBlock = Math.max(0, latest - maxBlocksToScan);
 
-      for (let b = latest; b >= 0 && out.length < limit; b--) {
+      for (let b = latest; b >= oldestBlock && out.length < limit; b--) {
         const block: any = await this.provider.getBlock(b, true);
         if (!block) continue;
         const txs = block.prefetchedTransactions || [];
         for (const tx of txs) {
           const target = byAddress[(tx.to || '').toLowerCase()];
           let action = 'Transaction';
+          let kodeAkreditasi: string | null = null;
           if (target?.contract && tx.data && tx.data !== '0x') {
             try {
               const parsed = target.contract.interface.parseTransaction({ data: tx.data, value: tx.value });
-              if (parsed) action = parsed.name;
+              if (parsed) {
+                action = parsed.name;
+                if (parsed.name === 'registerAkreditasi' && parsed.args?.[0]) {
+                  kodeAkreditasi = String(parsed.args[0]);
+                }
+              }
             } catch {
               /* not a known method */
             }
@@ -861,6 +995,7 @@ export class BlockchainService implements OnModuleInit {
             to: tx.to,
             contract: target?.name || (tx.to ? 'External' : 'Deployment'),
             action,
+            kodeAkreditasi,
             status: 'CONFIRMED',
             timestamp: new Date(Number(block.timestamp) * 1000),
           });
@@ -870,6 +1005,35 @@ export class BlockchainService implements OnModuleInit {
       return out;
     } catch (error) {
       this.logger.error('Failed to scan recent transactions:', error);
+      return [];
+    }
+  }
+
+  private async getTransactionsFromDatabase(limit: number): Promise<any[]> {
+    try {
+      const rows: any[] = await this.dataSource.query(
+        `SELECT tx_hash AS hash, block_number AS blockNumber, contract_address AS contractAddress,
+                function_name AS action, kode_akreditasi AS kodeAkreditasi, from_address AS \`from\`,
+                gas_used AS gasUsed, status, created_at AS createdAt
+         FROM blockchain_transactions
+         ORDER BY block_number DESC, id DESC
+         LIMIT ?`,
+        [limit],
+      );
+      return rows.map((r) => ({
+        hash: r.hash,
+        blockNumber: Number(r.blockNumber ?? 0),
+        from: r.from || '0xfe3b557e8fb62b89f4916b721be55ceb828dbd73',
+        to: r.contractAddress,
+        contract: 'AkreditasiRegistry',
+        action: r.action || 'Transaction',
+        kodeAkreditasi: r.kodeAkreditasi,
+        status: r.status === 'SUCCESS' ? 'CONFIRMED' : (r.status || 'CONFIRMED'),
+        timestamp: r.createdAt ? new Date(r.createdAt) : new Date(),
+        gasUsed: Number(r.gasUsed ?? 0),
+      }));
+    } catch (error) {
+      this.logger.debug('blockchain_transactions table unavailable:', error);
       return [];
     }
   }
@@ -884,11 +1048,18 @@ export class BlockchainService implements OnModuleInit {
         this.provider.getFeeData(),
       ]);
 
-      // Total transactions across all blocks (chain is small in local dev).
+      // Total transactions: read from the live audit trail (every write now
+      // records a row there) — O(1). Re-scanning every block from 0 on each
+      // request used to take minutes once the chain grew, since Clique keeps
+      // minting a new (mostly empty) block every few seconds forever.
       let totalTransactions = 0;
-      for (let b = blockNumber; b >= 0; b--) {
-        const block: any = await this.provider.getBlock(b);
-        if (block) totalTransactions += (block.transactions?.length || 0);
+      try {
+        const [{ cnt }] = await this.dataSource.query(
+          'SELECT COUNT(*) AS cnt FROM blockchain_transactions',
+        );
+        totalTransactions = Number(cnt ?? 0);
+      } catch {
+        /* table may not exist */
       }
 
       return {

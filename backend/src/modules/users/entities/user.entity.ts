@@ -51,24 +51,12 @@ export class User {
   @Column({ name: 'institusi_id', type: 'bigint', unsigned: true, nullable: true })
   institusiId: number;
 
-  @Column({ name: 'asesor_id', type: 'bigint', unsigned: true, nullable: true })
-  asesorId: number;
-
-  @Column({ name: 'is_active', type: 'boolean', default: true })
+  @Column({ name: 'isActive', type: 'boolean', default: true })
   isActive: boolean;
 
-  @Column({ name: 'last_login', type: 'datetime', nullable: true })
-  lastLogin: Date;
-
-  @Column({ name: 'avatar_url', length: 255, nullable: true })
-  avatarUrl: string;
-
-  @Column({ length: 50, nullable: true })
-  phone: string;
-
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'createdAt' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updatedAt' })
   updatedAt: Date;
 }

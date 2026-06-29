@@ -126,6 +126,14 @@ export default function DokumenPage() {
 
   useEffect(() => { loadDocs(); }, [loadDocs]);
 
+  // Auto-refresh so newly uploaded/processed documents show up without a
+  // manual click — uploads are processed asynchronously via Kafka, so the
+  // row can appear a few seconds after the upload request returns.
+  useEffect(() => {
+    const interval = setInterval(() => { loadDocs(); }, 8000);
+    return () => clearInterval(interval);
+  }, [loadDocs]);
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setUploadFiles((prev) => [...prev, ...acceptedFiles]);
   }, []);
@@ -166,18 +174,37 @@ export default function DokumenPage() {
       }
       toast.dismiss(loadingId);
       const last = results[results.length - 1] || {};
-      const cid = String(last.ipfsHash || '');
-      const tx = String(last.blockchainTxHash || '');
-      toast.success(
-        `${results.length} file tersimpan. IPFS CID: ${cid.slice(0, 14)}…` +
-          (tx && tx !== 'FAILED' && tx !== 'SKIPPED' ? ` • tx blockchain: ${tx.slice(0, 14)}…` : ''),
-        { duration: 7000 },
-      );
-      setShowUploadModal(false);
-      setUploadFiles([]);
-      setUploadKategori('');
-      setUploadAkreditasi('');
-      await loadDocs();
+      const queued = results.some((r) => r?.queued);
+
+      if (queued) {
+        // DATA_FILE_WORKFLOW_MODE=kafka: the request only enqueues the
+        // upload — IPFS + blockchain happen asynchronously. There's no CID
+        // yet, so don't pretend there is one; poll until it shows up.
+        toast.success(
+          `${results.length} file diantrekan untuk diproses (IPFS & blockchain berjalan di background)…`,
+          { duration: 6000 },
+        );
+        setShowUploadModal(false);
+        setUploadFiles([]);
+        setUploadKategori('');
+        setUploadAkreditasi('');
+        await loadDocs();
+        setTimeout(loadDocs, 4000);
+        setTimeout(loadDocs, 9000);
+      } else {
+        const cid = String(last.ipfsHash || '');
+        const tx = String(last.blockchainTxHash || '');
+        toast.success(
+          `${results.length} file tersimpan. IPFS CID: ${cid.slice(0, 14)}…` +
+            (tx && tx !== 'FAILED' && tx !== 'SKIPPED' ? ` • tx blockchain: ${tx.slice(0, 14)}…` : ''),
+          { duration: 7000 },
+        );
+        setShowUploadModal(false);
+        setUploadFiles([]);
+        setUploadKategori('');
+        setUploadAkreditasi('');
+        await loadDocs();
+      }
     } catch (err: any) {
       toast.dismiss(loadingId);
       toast.error(err?.response?.data?.message || 'Gagal mengunggah dokumen');

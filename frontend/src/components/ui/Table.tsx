@@ -149,9 +149,10 @@ interface TableCellProps {
   children: React.ReactNode;
   className?: string;
   align?: 'left' | 'center' | 'right';
+  colSpan?: number;
 }
 
-export function TableCell({ children, className, align = 'left' }: TableCellProps) {
+export function TableCell({ children, className, align = 'left', colSpan }: TableCellProps) {
   const alignments = {
     left: 'text-left',
     center: 'text-center',
@@ -159,7 +160,7 @@ export function TableCell({ children, className, align = 'left' }: TableCellProp
   };
 
   return (
-    <td className={cn('px-6 py-4 text-sm text-secondary-900', alignments[align], className)}>
+    <td colSpan={colSpan} className={cn('px-6 py-4 text-sm text-secondary-900', alignments[align], className)}>
       {children}
     </td>
   );

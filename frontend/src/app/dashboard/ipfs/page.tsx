@@ -49,6 +49,7 @@ const formatBytes = (n?: number | null) => {
 
 export default function IPFSPage() {
   const [search, setSearch] = useState('');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | '7d' | '30d'>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [nodeInfo, setNodeInfo] = useState<any>(null);
 
@@ -59,6 +60,15 @@ export default function IPFSPage() {
   useEffect(() => {
     ipfsApi.getInfo().then((r) => setNodeInfo(r.data)).catch(() => setNodeInfo(null));
   }, []);
+
+  // Auto-refresh so newly uploaded documents show up without a manual click.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchAll();
+      ipfsApi.getInfo().then((r) => setNodeInfo(r.data)).catch(() => setNodeInfo(null));
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [fetchAll]);
 
   const repoSizeBytes = Number(nodeInfo?.RepoSize ?? 0);
   const storageMaxBytes = Number(nodeInfo?.StorageMax ?? 0);
@@ -98,10 +108,30 @@ export default function IPFSPage() {
     }
   };
 
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const matchesDate = (createdAt?: string) => {
+    if (dateFilter === 'all') return true;
+    const t = createdAt ? new Date(createdAt).getTime() : NaN;
+    if (Number.isNaN(t)) return false;
+    if (dateFilter === 'today') return t >= startOfToday;
+    if (dateFilter === '7d') return t >= now.getTime() - 7 * 24 * 60 * 60 * 1000;
+    if (dateFilter === '30d') return t >= now.getTime() - 30 * 24 * 60 * 60 * 1000;
+    return true;
+  };
+
+  const dateFilters: { key: typeof dateFilter; label: string }[] = [
+    { key: 'all', label: 'Semua' },
+    { key: 'today', label: 'Hari ini' },
+    { key: '7d', label: '7 Hari' },
+    { key: '30d', label: '30 Hari' },
+  ];
+
   const filteredFiles = ipfsFiles.filter(
     (file) =>
-      file.name?.toLowerCase().includes(search?.toLowerCase()) ||
-      file.hash?.toLowerCase().includes(search?.toLowerCase())
+      (file.name?.toLowerCase().includes(search?.toLowerCase()) ||
+        file.hash?.toLowerCase().includes(search?.toLowerCase())) &&
+      matchesDate(file.createdAt)
   );
 
   if (loading) {
@@ -245,9 +275,9 @@ export default function IPFSPage() {
         </Card>
       </div>
 
-      {/* Search */}
+      {/* Search + Date Filter */}
       <Card>
-        <div className="flex gap-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
           <div className="flex-1">
             <Input
               placeholder="Cari file atau IPFS hash..."
@@ -256,6 +286,24 @@ export default function IPFSPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-secondary-500 whitespace-nowrap">Filter tanggal:</span>
+            <div className="flex flex-wrap gap-1">
+              {dateFilters.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => setDateFilter(f.key)}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    dateFilter === f.key
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-secondary-100 text-secondary-600 hover:bg-secondary-200'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </Card>
 
@@ -263,9 +311,19 @@ export default function IPFSPage() {
       <Card>
         <CardHeader
           title="Pinned Files"
-          subtitle={`${ipfsFiles.filter((f) => f.pinned).length} files pinned`}
+          subtitle={
+            dateFilter === 'all' && !search
+              ? `${ipfsFiles.filter((f) => f.pinned).length} files pinned`
+              : `Menampilkan ${filteredFiles.length} dari ${ipfsFiles.length} file`
+          }
         />
         <div className="space-y-2">
+          {filteredFiles.length === 0 && (
+            <div className="text-center py-10 text-secondary-500">
+              <File className="w-10 h-10 mx-auto mb-2 text-secondary-300" />
+              <p>Tidak ada file yang cocok dengan filter.</p>
+            </div>
+          )}
           {filteredFiles.map((file) => (
             <div
               key={file.hash}

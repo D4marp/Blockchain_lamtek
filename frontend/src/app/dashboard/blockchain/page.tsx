@@ -57,27 +57,43 @@ const defaultNetworkStats = {
 const getActionLabel = (action: string) => {
   const labels: Record<string, string> = {
     REGISTER_AKREDITASI: 'Register Akreditasi',
+    registerAkreditasi: 'Register Akreditasi',
+    registerTenant: 'Register Tenant',
     UPDATE_STATUS: 'Update Status',
+    updateStatus: 'Update Status',
     UPLOAD_DOCUMENT: 'Upload Document',
+    uploadDokumen: 'Upload Dokumen',
     SUBMIT_ASESMEN: 'Submit Asesmen',
     VERIFY_DOCUMENT: 'Verify Document',
     FINALIZE_ASESMEN: 'Finalize Asesmen',
     SET_PERINGKAT: 'Set Peringkat',
+    tetapkanPeringkat: 'Tetapkan Peringkat',
+    'Contract Deployment': 'Deploy Contract',
   };
   return labels[action] || action;
 };
 
 const getActionVariant = (action: string) => {
+  const key = action.replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase();
   const variants: Record<string, 'primary' | 'secondary' | 'success' | 'warning'> = {
     REGISTER_AKREDITASI: 'primary',
+    REGISTERTENANT: 'primary',
     UPDATE_STATUS: 'warning',
+    UPDATESTATUS: 'warning',
     UPLOAD_DOCUMENT: 'success',
+    UPLOADDOKUMEN: 'success',
     SUBMIT_ASESMEN: 'primary',
     VERIFY_DOCUMENT: 'success',
     FINALIZE_ASESMEN: 'success',
     SET_PERINGKAT: 'success',
+    TETAPKANPERINGKAT: 'success',
+    registerAkreditasi: 'primary',
+    registerTenant: 'primary',
+    updateStatus: 'warning',
+    uploadDokumen: 'success',
+    tetapkanPeringkat: 'success',
   };
-  return variants[action] || 'secondary';
+  return variants[action] || variants[key] || 'secondary';
 };
 
 export default function BlockchainPage() {
@@ -105,11 +121,11 @@ export default function BlockchainPage() {
           txHash: t.hash,
           blockNumber: t.blockNumber,
           action: t.action,
-          akreditasiId: t.contract,
+          akreditasiId: t.kodeAkreditasi || t.akreditasiId || '-',
           actor: t.from,
           timestamp: t.timestamp,
           status: (t.status || 'CONFIRMED').toLowerCase(),
-          gasUsed: 0,
+          gasUsed: t.gasUsed ?? 0,
         })),
       );
       const s = statsRes.data || {};
@@ -133,6 +149,13 @@ export default function BlockchainPage() {
 
   useEffect(() => {
     fetchTransactions();
+  }, []);
+
+  // Auto-refresh so new on-chain activity (uploads, status changes) shows up
+  // without a manual click.
+  useEffect(() => {
+    const interval = setInterval(() => { fetchTransactions(); }, 8000);
+    return () => clearInterval(interval);
   }, []);
 
   const copyToClipboard = (text: string) => {
@@ -219,8 +242,8 @@ export default function BlockchainPage() {
               <div>
                 <p className="text-sm text-secondary-500">Network Status</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <div className="w-2 h-2 bg-success-500 rounded-full animate-pulse" />
-                  <p className="font-semibold text-secondary-900">Online</p>
+                  <div className={`w-2 h-2 rounded-full ${networkStats.status === 'online' ? 'bg-success-500 animate-pulse' : 'bg-secondary-400'}`} />
+                  <p className="font-semibold text-secondary-900">{networkStats.status === 'online' ? 'Online' : 'Offline'}</p>
                 </div>
               </div>
             </div>
@@ -347,7 +370,14 @@ export default function BlockchainPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTransactions.map((tx) => (
+            {filteredTransactions.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-12 text-secondary-500">
+                  Belum ada transaksi blockchain. Jalankan <code className="text-xs">./scripts/seed-blockchain-onchain.sh</code> atau refresh setelah registrasi akreditasi.
+                </TableCell>
+              </TableRow>
+            ) : (
+            filteredTransactions.map((tx) => (
               <TableRow key={tx.id}>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -398,7 +428,8 @@ export default function BlockchainPage() {
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
+            ))
+            )}
           </TableBody>
         </Table>
       </Card>

@@ -12,7 +12,7 @@ DB_PORT="${DB_PORT:-3307}"
 DB_USER="${DB_USER:-root}"
 DB_PASS="${DB_PASS:-root123}"
 DB_NAME="${DB_NAME:-lamtek_db}"
-OUT_DIR="$(cd "$(dirname "$0")/.." && pwd)/database/migration"
+OUT_DIR="$(cd "$(dirname "$0")/.." && pwd)/backend/database/migration"
 OUT_FILE="${OUT_DIR}/lamtek_db_full.sql"
 
 mkdir -p "$OUT_DIR"

@@ -1,13 +1,16 @@
 import { Module, Global } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { KafkaService } from './kafka.service';
 import { KafkaController } from './kafka.controller';
 import { ConnectorService } from './connector.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Dokumen } from '../dokumen/entities/dokumen.entity';
 
 @Global()
 @Module({
   imports: [
+    TypeOrmModule.forFeature([Dokumen]),
     ClientsModule.registerAsync([
       {
         name: 'KAFKA_SERVICE',

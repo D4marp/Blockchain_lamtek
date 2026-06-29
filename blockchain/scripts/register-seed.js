@@ -5,9 +5,8 @@ const fs = require("fs");
 const path = require("path");
 
 async function main() {
-  const dep = JSON.parse(
-    fs.readFileSync(path.join(__dirname, "..", "deployments", "localhost-deployment.json"))
-  );
+  const depFile = path.join(__dirname, "..", "deployments", `${hre.network.name}-deployment.json`);
+  const dep = JSON.parse(fs.readFileSync(depFile, "utf8"));
   const addr = dep.contracts.AkreditasiRegistry;
   const reg = await hre.ethers.getContractAt("AkreditasiRegistry", addr);
   console.log("AkreditasiRegistry:", addr);

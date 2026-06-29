@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 -- ----------------------------
 INSERT INTO `users` (`name`, `email`, `password`, `role`, `tenantId`, `isActive`) VALUES
 ('Admin LAM Teknik', 'admin@lamtek.ac.id', '$2a$10$dGQpyMuHJt/ayZaMDF98QuLjLn8O6BKbmT69ZsyDVMs3QhHFNTzU6', 'ADMIN', NULL, 1),
-('Test User', 'demo@test.com', '$2a$10$GUVUT4FgN7uWuGLdx1Fbp.k5HN3Epyta2q90vhc1SM.vgYWiVxL8.', 'USER', NULL, 1)
+('Test User', 'demo@test.com', '$2a$10$GUVUT4FgN7uWuGLdx1Fbp.k5HN3Epyta2q90vhc1SM.vgYWiVxL8.', 'PRODI', NULL, 1)
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
 SET FOREIGN_KEY_CHECKS = 1;

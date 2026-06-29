@@ -28,7 +28,11 @@ module.exports = {
       url: process.env.BESU_RPC_URL || "http://localhost:8545",
       chainId: 1337,
       accounts: besuAccounts,
-      gasPrice: 0,
+      // Besu has London/EIP-1559 active; a legacy gasPrice:0 tx is rejected
+      // ("gas price below configured minimum"). Let ethers use auto EIP-1559
+      // fees (~1 gwei priority); baseFee is 0 so cost is negligible.
+      timeout: 300000,
+      httpHeaders: {},
     },
   },
   paths: {

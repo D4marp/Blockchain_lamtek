@@ -6,6 +6,8 @@ node_modules/
 dist/
 build/
 *.js.map
+frontend/.next/
+frontend/tsconfig.tsbuildinfo
 
 # Environment files
 .env
@@ -13,13 +15,19 @@ build/
 .env.*.local
 
 # Docker volumes
+backend/database/mysql-data/
+backend/database/redis-data/
 database/mysql-data/
 database/redis-data/
-database/blockscout-data/
-ipfs/data/
-ipfs/staging/
+ipfs/
+.claude/
+backend/database/blockscout-data/
+blockchain/ipfs/data/
+blockchain/ipfs/staging/
 blockchain/besu/node1/data/
 blockchain/besu/node2/data/
+blockchain/besu/node3/data/
+blockchain/besu/node4/data/
 
 # Blockchain artifacts
 blockchain/artifacts/

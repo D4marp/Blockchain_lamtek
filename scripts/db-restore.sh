@@ -10,7 +10,7 @@ DB_HOST="${DB_HOST:-host.docker.internal}"
 DB_PORT="${DB_PORT:-3307}"
 DB_USER="${DB_USER:-root}"
 DB_PASS="${DB_PASS:-root123}"
-IN_DIR="$(cd "$(dirname "$0")/.." && pwd)/database/migration"
+IN_DIR="$(cd "$(dirname "$0")/.." && pwd)/backend/database/migration"
 IN_FILE="${IN_DIR}/lamtek_db_full.sql"
 
 [ -f "$IN_FILE" ] || { echo "Dump not found: $IN_FILE (run scripts/db-dump.sh first)"; exit 1; }

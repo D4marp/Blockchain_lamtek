@@ -16,7 +16,7 @@ services:
       MYSQL_USER: lamtek
       MYSQL_PASSWORD: lamtek123
     volumes:
-      - ./database/init:/docker-entrypoint-initdb.d
+      - ./backend/database/init:/docker-entrypoint-initdb.d
       - mysql-test-data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]

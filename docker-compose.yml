@@ -17,7 +17,7 @@ services:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3001/api/v1}
     depends_on:
       api-gateway:
-        condition: service_healthy
+        condition: service_started
     networks:
       - lamtek-network
 
@@ -35,18 +35,24 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
+      - TYPEORM_SYNCHRONIZE=false
+      - SEED_ON_STARTUP=false
       - DATABASE_URL=mysql://lamtek:lamtek123@mysql:3306/lamtek_db
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_USERNAME=lamtek
       - DB_PASSWORD=lamtek123
       - DB_DATABASE=lamtek_db
-      - SEED_ON_STARTUP=true
       - BESU_RPC_URL=http://besu-node1:8545
       - BESU_WS_URL=ws://besu-node1:8546
-      - SIGNER_MODE=external
+      - SIGNER_MODE=direct
       - EXTERNAL_SIGNER_RPC_URL=http://besu-node1:8545
       - EXTERNAL_SIGNER_ADDRESS=
+      - BLOCKCHAIN_PRIVATE_KEY=0xc87509a1c067bbde78beb3e793fa12cc4337b340a66def355c14b0ab292efe4f
+      - AKREDITASI_CONTRACT_ADDRESS=${AKREDITASI_CONTRACT_ADDRESS:-0x5FbDB2315678afecb367f032d93F642f64180aa3}
+      - ASESMEN_KECUKUPAN_CONTRACT_ADDRESS=${ASESMEN_KECUKUPAN_CONTRACT_ADDRESS:-0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512}
+      - ASESMEN_LAPANGAN_CONTRACT_ADDRESS=${ASESMEN_LAPANGAN_CONTRACT_ADDRESS:-0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0}
+      - DOKUMEN_IPFS_CONTRACT_ADDRESS=${DOKUMEN_IPFS_CONTRACT_ADDRESS:-0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9}
       - VAULT_ADDR=http://vault:8200
       - VAULT_TOKEN=
       - VAULT_SECRET_PATH=secret/data/lamtek/blockchain
@@ -68,7 +74,7 @@ services:
       redis:
         condition: service_healthy
       besu-node1:
-        condition: service_healthy
+        condition: service_started
       ipfs-node:
         condition: service_healthy
       kafka:
@@ -136,10 +142,13 @@ services:
     networks:
       - lamtek-network
     healthcheck:
-      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
-      interval: 30s
+      # kafka-topics spins up a JVM (>10s) and overruns the timeout even when the
+      # broker is fine; a lightweight TCP check on 9092 is fast and reliable.
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/9092' || exit 1"]
+      interval: 15s
       timeout: 10s
-      retries: 5
+      retries: 10
+      start_period: 30s
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -201,7 +210,7 @@ services:
       --metrics-port=9545
     networks:
       lamtek-network:
-        ipv4_address: 172.20.0.10
+        ipv4_address: 172.30.0.10
     healthcheck:
       test: ["CMD", "bash", "-lc", "cat < /dev/null > /dev/tcp/127.0.0.1/8545"]
       interval: 30s
@@ -244,7 +253,6 @@ services:
       --rpc-ws-port=8546
       --host-allowlist="*"
       --min-gas-price=0
-      --bootnodes=enode://a0a1c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7@172.20.0.10:30303
       --metrics-enabled=true
       --metrics-host=0.0.0.0
       --metrics-port=9545
@@ -252,7 +260,7 @@ services:
       - besu-node1
     networks:
       lamtek-network:
-        ipv4_address: 172.20.0.11
+        ipv4_address: 172.30.0.11
     healthcheck:
       test: ["CMD", "bash", "-lc", "cat < /dev/null > /dev/tcp/127.0.0.1/8545"]
       interval: 30s
@@ -295,7 +303,6 @@ services:
       --rpc-ws-port=8546
       --host-allowlist="*"
       --min-gas-price=0
-      --bootnodes=enode://a0a1c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7@172.20.0.10:30303
       --metrics-enabled=true
       --metrics-host=0.0.0.0
       --metrics-port=9545
@@ -303,7 +310,7 @@ services:
       - besu-node1
     networks:
       lamtek-network:
-        ipv4_address: 172.20.0.12
+        ipv4_address: 172.30.0.12
     healthcheck:
       test: ["CMD", "bash", "-lc", "cat < /dev/null > /dev/tcp/127.0.0.1/8545"]
       interval: 30s
@@ -346,7 +353,6 @@ services:
       --rpc-ws-port=8546
       --host-allowlist="*"
       --min-gas-price=0
-      --bootnodes=enode://a0a1c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7@172.20.0.10:30303
       --metrics-enabled=true
       --metrics-host=0.0.0.0
       --metrics-port=9545
@@ -354,7 +360,7 @@ services:
       - besu-node1
     networks:
       lamtek-network:
-        ipv4_address: 172.20.0.13
+        ipv4_address: 172.30.0.13
     healthcheck:
       test: ["CMD", "bash", "-lc", "cat < /dev/null > /dev/tcp/127.0.0.1/8545"]
       interval: 30s
@@ -375,8 +381,8 @@ services:
     environment:
       - IPFS_PROFILE=server
     volumes:
-      - ./ipfs/data:/data/ipfs
-      - ./ipfs/staging:/export
+      - ./blockchain/ipfs/data:/data/ipfs
+      - ./blockchain/ipfs/staging:/export
     networks:
       - lamtek-network
     command: >
@@ -396,15 +402,20 @@ services:
     container_name: lamtek-mysql
     restart: unless-stopped
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3307}:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=root123
       - MYSQL_DATABASE=lamtek_db
       - MYSQL_USER=lamtek
       - MYSQL_PASSWORD=lamtek123
     volumes:
-      - ./database/mysql-data:/var/lib/mysql
-      - ./database/init:/docker-entrypoint-initdb.d
+      # MySQL data lives in a Docker named volume (not a host bind mount).
+      # On macOS/VirtioFS a bind-mounted MySQL 8 datadir hits the
+      # InnoDB os0file.cc dir_fd assertion + extremely slow init; the named
+      # volume (ext4 in the Docker VM) is fast and reliable. Schema + seed SQL
+      # remain in the repo under backend/database/{init,migration}.
+      - mysql-data:/var/lib/mysql
+      - ./backend/database/init:/docker-entrypoint-initdb.d
     networks:
       - lamtek-network
     healthcheck:
@@ -418,7 +429,7 @@ services:
     container_name: lamtek-redis
     restart: unless-stopped
     volumes:
-      - ./database/redis-data:/data
+      - ./backend/database/redis-data:/data
     networks:
       - lamtek-network
     command: redis-server --appendonly yes --port 6379
@@ -458,15 +469,16 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_DB=blockscout
     volumes:
-      - ./database/blockscout-data:/var/lib/postgresql/data
+      - ./backend/database/blockscout-data:/var/lib/postgresql/data
     networks:
       - lamtek-network
 
 networks:
   lamtek-network:
     driver: bridge
-    # No fixed subnet: let Docker auto-assign so the stack is portable and does
-    # not clash with other projects (locally or on PaaS).
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
 
 volumes:
   mysql-data:

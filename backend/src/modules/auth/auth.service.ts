@@ -93,6 +93,7 @@ export class AuthService {
       // Create user
       const user = this.userRepository.create({
         name: registerDto.name,
+        nama: registerDto.name,
         email: registerDto.email,
         password: hashedPassword,
         role: 'PRODI',

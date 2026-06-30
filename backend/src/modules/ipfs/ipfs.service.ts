@@ -9,12 +9,18 @@ import { createHash } from 'crypto';
 export class IpfsService implements OnModuleInit {
   private readonly logger = new Logger(IpfsService.name);
   private apiUrl: string;
+  // Used for server-side fetches (container-to-container, e.g. ipfs-node:8080).
   private gatewayUrl: string;
+  // Used for links handed to the browser (e.g. http://localhost:8888) — must
+  // be reachable from the user's machine, not just from inside the Docker
+  // network, so it has its own setting instead of reusing `gatewayUrl`.
+  private publicGatewayUrl: string;
   private isConnected = false;
 
   constructor(private configService: ConfigService) {
     this.apiUrl = this.configService.get('IPFS_API_URL', 'http://localhost:5001');
     this.gatewayUrl = this.configService.get('IPFS_GATEWAY_URL', 'http://localhost:8080');
+    this.publicGatewayUrl = this.configService.get('IPFS_PUBLIC_GATEWAY_URL', this.gatewayUrl);
   }
 
   async onModuleInit() {
@@ -114,7 +120,7 @@ export class IpfsService implements OnModuleInit {
 
       return {
         ipfsHash,
-        url: `${this.gatewayUrl}/ipfs/${ipfsHash}`,
+        url: `${this.publicGatewayUrl}/ipfs/${ipfsHash}`,
         size: file.size,
         sha256,
       };
@@ -153,7 +159,7 @@ export class IpfsService implements OnModuleInit {
 
       return {
         ipfsHash,
-        url: `${this.gatewayUrl}/ipfs/${ipfsHash}`,
+        url: `${this.publicGatewayUrl}/ipfs/${ipfsHash}`,
       };
     } catch (error) {
       this.logger.error('Failed to upload JSON to IPFS:', error);
@@ -265,7 +271,7 @@ export class IpfsService implements OnModuleInit {
    * Get IPFS gateway URL for hash
    */
   getGatewayUrl(ipfsHash: string): string {
-    return `${this.gatewayUrl}/ipfs/${ipfsHash}`;
+    return `${this.publicGatewayUrl}/ipfs/${ipfsHash}`;
   }
 
   /**

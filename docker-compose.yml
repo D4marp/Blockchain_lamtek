@@ -58,7 +58,8 @@ services:
       - VAULT_SECRET_PATH=secret/data/lamtek/blockchain
       - VAULT_SECRET_KEY=privateKey
       - IPFS_API_URL=http://ipfs-node:5001
-      - IPFS_GATEWAY_URL=http://ipfs-node:8888
+      - IPFS_GATEWAY_URL=http://ipfs-node:8080
+      - IPFS_PUBLIC_GATEWAY_URL=${IPFS_PUBLIC_GATEWAY_URL:-http://localhost:8888}
       - JWT_SECRET=${JWT_SECRET:-lamtek-secret-key-2025}
       - JWT_EXPIRES_IN=24h
       - REDIS_URL=redis://redis:6379

@@ -19,7 +19,7 @@ backend/database/mysql-data/
 backend/database/redis-data/
 database/mysql-data/
 database/redis-data/
-ipfs/
+/ipfs/
 .claude/
 backend/database/blockscout-data/
 blockchain/ipfs/data/
